@@ -1,0 +1,11 @@
+# Always revalidate the app shell and script so a redeploy reaches every browser at once.
+/app/
+  Cache-Control: no-cache
+/app/index.html
+  Cache-Control: no-cache
+/app/main.dart.js
+  Cache-Control: no-cache
+/app/flutter_bootstrap.js
+  Cache-Control: no-cache
+/embed/*
+  Cache-Control: public, max-age=300

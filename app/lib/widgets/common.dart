@@ -98,7 +98,8 @@ class Progress extends StatelessWidget {
   }
 }
 
-/// A photo cropped to an oval, framed by a band of colour (the drape around the face).
+/// The face photo inside a hijab-shaped drape of [drapeHex]: hood over the head, a wrap under the chin
+/// and fabric falling to the shoulders, so the colour sits next to the face the way a hijab would.
 class DrapedFace extends StatelessWidget {
   const DrapedFace({super.key, required this.url, required this.drapeHex, required this.label, this.size = 150});
   final String url;
@@ -108,22 +109,103 @@ class DrapedFace extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final w = size * 1.3, h = size * 1.6;
+    final face = HijabGeometry.face(Size(w, h));
+    final colour = hexColor(drapeHex);
     return Semantics(
       image: true,
       label: label,
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Container(
-          width: size,
-          height: size * 1.25,
-          padding: EdgeInsets.all(size * 0.13),
-          decoration: BoxDecoration(color: hexColor(drapeHex), borderRadius: BorderRadius.all(Radius.elliptical(size, size * 1.25))),
-          child: ClipOval(child: Image.network(url, fit: BoxFit.cover, errorBuilder: (_, _, _) => const ColoredBox(color: Tone.paperDeep))),
+        SizedBox(
+          width: w,
+          height: h,
+          child: Stack(children: [
+            Positioned.fill(child: CustomPaint(painter: _HijabPainter(colour, front: false))),
+            Positioned.fromRect(
+              rect: face,
+              child: ClipOval(child: Image.network(url, fit: BoxFit.cover, alignment: const Alignment(0, -0.2), errorBuilder: (_, _, _) => const ColoredBox(color: Tone.paperDeep))),
+            ),
+            Positioned.fill(child: IgnorePointer(child: CustomPaint(painter: _HijabPainter(colour, front: true)))),
+          ]),
         ),
         const SizedBox(height: 8),
         Text(label, textAlign: TextAlign.center, style: Theme.of(context).textTheme.labelLarge),
       ]),
     );
   }
+}
+
+/// Shared proportions of the hijab drape, relative to the painted box.
+class HijabGeometry {
+  static Rect face(Size s) => Rect.fromCenter(center: Offset(s.width * 0.5, s.height * 0.40), width: s.width * 0.54, height: s.height * 0.48);
+
+  static Path back(Size s) {
+    double x(double v) => v * s.width;
+    double y(double v) => v * s.height;
+    return Path()
+      ..moveTo(x(0.5), y(0.03))
+      ..cubicTo(x(0.92), y(0.03), x(0.97), y(0.42), x(0.86), y(0.64))
+      ..cubicTo(x(0.96), y(0.74), x(1.0), y(0.86), x(1.0), y(0.99))
+      ..quadraticBezierTo(x(0.5), y(0.95), x(0.0), y(0.99))
+      ..cubicTo(x(0.0), y(0.86), x(0.04), y(0.74), x(0.14), y(0.64))
+      ..cubicTo(x(0.03), y(0.42), x(0.08), y(0.03), x(0.5), y(0.03))
+      ..close();
+  }
+
+  /// The wrap that passes under the chin, drawn in front of the photo's lower edge.
+  static Path chinWrap(Size s) {
+    double x(double v) => v * s.width;
+    double y(double v) => v * s.height;
+    // A soft band that starts and ends behind the face edge and dips under the chin.
+    return Path()
+      ..moveTo(x(0.25), y(0.56))
+      ..cubicTo(x(0.30), y(0.70), x(0.70), y(0.70), x(0.75), y(0.56))
+      ..cubicTo(x(0.76), y(0.62), x(0.72), y(0.72), x(0.5), y(0.73))
+      ..cubicTo(x(0.28), y(0.72), x(0.24), y(0.62), x(0.25), y(0.56))
+      ..close();
+  }
+}
+
+class _HijabPainter extends CustomPainter {
+  _HijabPainter(this.colour, {required this.front});
+  final Color colour;
+  final bool front;
+
+  Color _shade(double dl) {
+    final hsl = HSLColor.fromColor(colour);
+    return hsl.withLightness((hsl.lightness + dl).clamp(0.0, 1.0)).toColor();
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (!front) {
+      final back = HijabGeometry.back(size);
+      canvas.drawPath(back, Paint()..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [_shade(0.04), colour, _shade(-0.08)]).createShader(Offset.zero & size));
+      // A few soft folds so it reads as fabric, not a flat shape.
+      final fold = Paint()
+        ..color = _shade(-0.14).withValues(alpha: 0.55)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size.width * 0.012
+        ..strokeCap = StrokeCap.round;
+      for (final (x0, x1) in [(0.18, 0.08), (0.30, 0.24), (0.70, 0.76), (0.82, 0.92)]) {
+        canvas.drawPath(
+          Path()
+            ..moveTo(size.width * x0, size.height * 0.70)
+            ..quadraticBezierTo(size.width * (x0 + x1) / 2, size.height * 0.84, size.width * x1, size.height * 0.97),
+          fold,
+        );
+      }
+      // Inner edge around the face: the fabric's shadow.
+      canvas.drawOval(HijabGeometry.face(size).inflate(size.width * 0.012), Paint()..color = _shade(-0.18));
+      return;
+    }
+    final wrap = HijabGeometry.chinWrap(size);
+    canvas.drawPath(wrap, Paint()..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [_shade(-0.06), _shade(0.03)]).createShader(Offset.zero & size));
+    canvas.drawPath(wrap, Paint()..color = _shade(-0.2).withValues(alpha: 0.5)..style = PaintingStyle.stroke..strokeWidth = 1);
+  }
+
+  @override
+  bool shouldRepaint(_HijabPainter old) => old.colour != colour || old.front != front;
 }
 
 /// Keeps content to a readable width and gives every screen the same side gutter.
