@@ -6,6 +6,7 @@ import '../api.dart';
 import '../imaging.dart';
 import '../platform/platform.dart';
 import '../theme.dart';
+import '../widgets/colour_picker.dart';
 import '../widgets/common.dart';
 
 const _keyStore = 'drape.sellerKey';
@@ -384,6 +385,19 @@ class _ProductEditorState extends State<_ProductEditor> {
       _CwRow(TextEditingController(text: c.id), TextEditingController(text: c.name), TextEditingController(text: c.hex), c.image),
   ];
 
+  Future<void> _pick(_CwRow r) async {
+    final picked = await pickColour(context, initialHex: r.hex.text);
+    if (picked == null) return;
+    setState(() {
+      r.hex.text = picked.$1;
+      final name = picked.$2;
+      if (name != null && r.name.text.trim().isEmpty) r.name.text = name;
+      if (r.id.text.trim().isEmpty && r.name.text.trim().isNotEmpty) {
+        r.id.text = r.name.text.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-').replaceAll(RegExp(r'^-|-$'), '');
+      }
+    });
+  }
+
   void _addRow() => setState(() => _rows.add(_CwRow(TextEditingController(), TextEditingController(), TextEditingController(text: '#'), '')));
 
   Map<String, dynamic> _json() => {
@@ -456,21 +470,29 @@ class _ProductEditorState extends State<_ProductEditor> {
             SizedBox(width: 130, child: TextField(controller: r.id, decoration: const InputDecoration(labelText: 'Id'))),
             SizedBox(width: 160, child: TextField(controller: r.name, decoration: const InputDecoration(labelText: 'Name'))),
             SizedBox(
-              width: 140,
+              width: 150,
               child: TextField(
                 controller: r.hex,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   labelText: 'Colour',
                   hintText: '#rrggbb',
-                  prefixIcon: RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(r.hex.text)
-                      ? Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Container(width: 18, height: 18, decoration: BoxDecoration(color: hexColor(r.hex.text), shape: BoxShape.circle, border: Border.all(color: Colors.black12))),
-                        )
-                      : null,
+                  prefixIcon: IconButton(
+                    tooltip: 'Pick from palette',
+                    onPressed: () => _pick(r),
+                    icon: RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(r.hex.text)
+                        ? Container(width: 20, height: 20, decoration: BoxDecoration(color: hexColor(r.hex.text), shape: BoxShape.circle, border: Border.all(color: Colors.black12)))
+                        : const Icon(Icons.palette_outlined, size: 20),
+                  ),
                 ),
               ),
+            ),
+            IconButton.outlined(
+              tooltip: 'Pick from palette',
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              style: IconButton.styleFrom(side: const BorderSide(color: Tone.line), backgroundColor: Tone.surface),
+              onPressed: () => _pick(r),
+              icon: const Icon(Icons.palette_outlined, color: Tone.mulberry),
             ),
             if (editing)
               OutlinedButton.icon(
