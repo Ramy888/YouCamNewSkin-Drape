@@ -73,10 +73,8 @@ class VerdictLabel extends StatelessWidget {
 
 /// White card with a hairline border and soft shadow: the basic container on every screen.
 class DrapeCard extends StatelessWidget {
-  const DrapeCard({super.key, required this.child, this.padding = const EdgeInsets.all(20), this.color = Tone.surface, this.expand = false});
+  const DrapeCard({super.key, required this.child, this.padding = const EdgeInsets.all(20), this.color = Tone.surface});
   final Widget child;
-  /// Fill the parent's height (equal-height tiles).
-  final bool expand;
   final EdgeInsetsGeometry padding;
   final Color color;
 
@@ -84,7 +82,6 @@ class DrapeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: padding,
-      height: expand ? double.infinity : null,
       decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(16), border: Border.all(color: Tone.line), boxShadow: cardShadow),
       child: child,
     );

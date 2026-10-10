@@ -17,9 +17,9 @@ Built for the YouCam API Skin AI & eCommerce VTO Hackathon (eCommerce VTO track)
    - **Complete the look** → **Add bundle to cart**. The look lands in the shop's own bag.
 4. Prefer the Drape app directly? **https://drape.ramy-comm.workers.dev/app/**
 
-The judge path runs in **replay mode**: every YouCam result shown was produced by a real API call during development and is
-served from recorded fixtures, so judging never fails because of quota. A capped live mode ("use my photo") can be switched on;
-see [Live mode](#live-mode).
+The sample-person path is served from recordings of real YouCam calls, so it costs nothing and never fails. **Use my photo**
+runs live YouCam calls under a capped budget (one new face reading per visitor per day); when a limit is hit, the buyer sees the
+labelled sample result instead of an error. See [Live mode](#live-mode).
 
 ## YouCam APIs used
 
@@ -78,7 +78,7 @@ cd stores/noor && npx --prefix ../../backend wrangler dev --port 8788
 
 Open http://localhost:8788 and click **Try on with Drape**. A fresh clone makes **zero** calls to YouCam.
 
-To rebuild the web app: `cd app && flutter build web --release --base-href /app/ -o ../backend/public/app`.
+To rebuild the web app: `cd app && flutter build web --release --base-href /app/ --no-wasm-dry-run --output ../backend/public/app`.
 
 ## Add the button to a store
 
@@ -115,7 +115,7 @@ The store's origin must be on the allowed list (`ALLOWED_ORIGINS`). Misconfigura
 | GET | `/v1/jobs/:id` | token | job status and result |
 | POST | `/v1/sessions/me/palette` | token | `{override: "warmer" \| "cooler" \| null}` (0 units) |
 | GET | `/v1/admin/products` | `Bearer sk_…` | all products, including drafts and disabled ones |
-| GET | `/v1/admin/ledger` | `Bearer sk_…` | unit ledger summary |
+| GET | `/v1/admin/ledger` | `Bearer sk_…` | unit ledger summary and `role` (`owner` or `judge`) |
 | GET | `/health` | none | mode, key present, units, replay assets |
 
 ## Errors
@@ -126,21 +126,26 @@ Every error has the same shape:
 { "error": { "code": "DRAPE_DOMAIN_NOT_ALLOWED", "message": "…", "fix": "…", "docs_url": "…", "request_id": "…" } }
 ```
 
-Codes: `DRAPE_BAD_REQUEST`, `DRAPE_BAD_KEY`, `DRAPE_UNAUTHORIZED`, `DRAPE_DOMAIN_NOT_ALLOWED`, `DRAPE_PRODUCT_NOT_FOUND`,
+Codes: `DRAPE_BAD_REQUEST`, `DRAPE_BAD_KEY`, `DRAPE_UNAUTHORIZED`, `DRAPE_READ_ONLY`, `DRAPE_DOMAIN_NOT_ALLOWED`, `DRAPE_PRODUCT_NOT_FOUND`,
 `DRAPE_SESSION_NOT_FOUND`, `DRAPE_JOB_NOT_FOUND`, `DRAPE_IMAGE_INVALID`, `DRAPE_IMAGE_TOO_LARGE`, `DRAPE_CATEGORY_UNSUPPORTED`,
 `DRAPE_PHOTO_MISSING`, `DRAPE_BUDGET_EXHAUSTED`, `DRAPE_NOT_FOUND`, `DRAPE_INTERNAL`.
 YouCam photo errors (for example `error_face_angle_downward`, `error_multi_person`, `error_pose`) become retake advice for the buyer.
 
 ## Live mode
 
-Off by default. To turn it on (spends YouCam units):
+Off by default: `wrangler.jsonc` keeps `YOUCAM_MODE=replay` and a budget of 0, so a clone or CI never spends units.
+The hosted demo is deployed live with a judging budget:
 
 ```bash
 cd backend
 npx wrangler secret put YOUCAM_API_KEY
-# in wrangler.jsonc vars: "YOUCAM_MODE": "live", "YOUCAM_LIVE_BUDGET": "<units>", optional "JUDGE_CODE"
-npx wrangler deploy
+npm run deploy:live        # wrangler deploy --var YOUCAM_MODE:live --var YOUCAM_LIVE_BUDGET:400
 ```
+
+A plain `npm run deploy` puts production back in replay mode.
+
+Optional `JUDGE_SELLER_KEY` secret: a view-only seller key for judges. It can read the console (products, ledger); every write
+(save, photo upload, reconcile) returns `DRAPE_READ_ONLY`. `FORCE_REPLAY=1` is the kill switch.
 
 ## Privacy
 
@@ -150,10 +155,11 @@ salted daily hash.
 
 ## Limitations
 
-- Replay mode serves recorded results for the sample person; a real photo in replay mode gets the sample result, clearly labelled.
-- Makeup preview for the sample person is not recorded yet (the lip shade is shown as a swatch).
-- The hijab frame on the reveal is a colour frame around the face, not a rendered hijab.
-- Garment images: the abaya photo is public domain (Wikimedia Commons); colourways are recoloured from it.
+- In replay mode a real photo gets the sample person's result, clearly labelled.
+- Earring try-on needs visible ears. With a hijab it fails (free of charge) and the look shows the palette metal instead.
+- The colour drape on "Your colours" is drawn around the face photo; it is not a rendered hijab.
+- Clothes VTO can vary a garment's details between renders (for example sleeve shape); the colour comparison stays clear.
+- Garment images are public domain or CC0 (sources in `docs/derisk/IMAGE_SOURCES.md`); colourways are recoloured locally.
 
 ## Repository
 
@@ -161,6 +167,7 @@ salted daily hash.
 - `app/` — Flutter web app (buyer flow + seller console)
 - `stores/noor/` — the fictional demo shop
 - `extension/` — the URL-only Chrome extension
+- `DESIGN.md` — design system · `docs/submission/` — Devpost write-up and Arabic review sheet
 - `docs/product.md` — build spec · `docs/derisk/` — API gate tests and recorded fixtures · `docs/history.md` — planning history
 
 ## License

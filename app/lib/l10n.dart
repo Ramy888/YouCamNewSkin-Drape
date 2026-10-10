@@ -107,7 +107,7 @@ class S {
   String get verdictAvoid => _('Not your colour', 'ليس لونك');
   String get verdictNeutral => _('Could work', 'ممكن');
   String get noneMatch => _('None of this store’s colours match yet — here are the closest.', 'لا توجد ألوان مطابقة لك هنا بعد — هذه الأقرب.');
-  String get tryOn => _('See it on me', 'شوفيها عليّ');
+  String get tryOn => _('See it on me', 'شوفيها');
 
   // compare
   String dressing(String colour) => _('Dressing you in $colour…', 'نُلبسك اللون $colour…');

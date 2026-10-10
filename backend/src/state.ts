@@ -31,6 +31,8 @@ export interface Env {
   JUDGE_CODE?: string;
   SESSION_SECRET?: string;
   SELLER_SECRET?: string;
+  /** Optional view-only seller key for judges: reads the console, can't change anything. */
+  JUDGE_SELLER_KEY?: string;
   DEMO_PUBLISHABLE_KEY?: string;
   ALLOWED_ORIGINS?: string;
   PUBLIC_ORIGIN?: string;
@@ -162,6 +164,9 @@ export class DrapeState extends DurableObject<Env> {
       res.headers.set("x-request-id", requestId);
       return res;
     } catch (e) {
+      // A request refused before its body was read (e.g. an upload with the wrong key) must still drain the body,
+      // or the runtime drops the connection and the next request fails with "Network connection lost".
+      if (req.body && !req.bodyUsed) await req.arrayBuffer().catch(() => undefined);
       return errorResponse(e, requestId);
     }
   }
@@ -188,9 +193,12 @@ export class DrapeState extends DurableObject<Env> {
     if (mm && m === "GET") return this.getJob(req, mm[1]);
     mm = p.match(/^\/v1\/files\/((?:cat|u|r)\/[A-Za-z0-9_\-/.]+)$/);
     if (mm && m === "GET") return this.file(mm[1]);
-    if (p === "/v1/admin/ledger" && m === "GET") { await this.seller(req); return Response.json({ ...this.ledger.summary(), stuckEntries: this.ledger.stuck() }); }
+    if (p === "/v1/admin/ledger" && m === "GET") {
+      const role = await this.seller(req, { write: false });
+      return Response.json({ ...this.ledger.summary(), stuckEntries: this.ledger.stuck(), role });
+    }
     if (p === "/v1/admin/products" && m === "GET") {
-      await this.seller(req);
+      await this.seller(req, { write: false });
       const rows = this.sql.exec(`SELECT id FROM products WHERE store_id = 'demo' ORDER BY id`);
       return Response.json({ products: rows.map((r) => this.product(String(r.id), false)) });
     }
@@ -254,16 +262,24 @@ export class DrapeState extends DurableObject<Env> {
     throw new DrapeError("DRAPE_PRODUCT_NOT_FOUND", 404, "This product isn't on Drape yet.", "Ask the seller to add it to Drape with this page's link.");
   }
 
-  private async seller(req: Request) {
+  /**
+   * Seller sign-in. The store's secret key is the owner; JUDGE_SELLER_KEY (if set) is a view-only judge.
+   * Every write passes `write: true`, so a judge can look at everything but change nothing.
+   */
+  private async seller(req: Request, { write }: { write: boolean }): Promise<"owner" | "judge"> {
     const key = bearer(req);
     const row = this.sql.exec(`SELECT sk_hash FROM stores WHERE id = 'demo'`)[0];
-    if (!key || !row?.sk_hash || (await hashKey(key)) !== row.sk_hash) {
-      throw new DrapeError("DRAPE_UNAUTHORIZED", 401, "Seller key missing or wrong.", "Sign in to the seller console with the secret key you were issued.");
+    const hash = key ? await hashKey(key) : null;
+    if (hash && row?.sk_hash && hash === row.sk_hash) return "owner";
+    if (hash && this.env.JUDGE_SELLER_KEY && hash === (await hashKey(this.env.JUDGE_SELLER_KEY))) {
+      if (write) throw new DrapeError("DRAPE_READ_ONLY", 403, "Judge access is view-only.", "Use the store's own seller key to make changes.");
+      return "judge";
     }
+    throw new DrapeError("DRAPE_UNAUTHORIZED", 401, "Seller key missing or wrong.", "Sign in to the seller console with the secret key you were issued.");
   }
 
   private async upsertProduct(req: Request): Promise<Response> {
-    await this.seller(req);
+    await this.seller(req, { write: true });
     const body = (await req.json().catch(() => null)) as Partial<Product> | null;
     if (!body?.id || !/^[a-z0-9-]{3,40}$/.test(body.id)) throw bad("Product id must be 3–40 lowercase letters, digits or dashes.", 'Send {"id":"abaya-classic", ...}.');
     if (!body.name || body.name.length > 80) throw bad("Product name is required (max 80 characters).", "Send a name.");
@@ -291,7 +307,7 @@ export class DrapeState extends DurableObject<Env> {
   }
 
   private async uploadColorwayImage(req: Request, pid: string, cid: string): Promise<Response> {
-    await this.seller(req);
+    await this.seller(req, { write: true });
     const product = this.product(pid, false);
     const cw = product.colorways.find((c) => c.id === cid);
     if (!cw) throw bad(`Product ${pid} has no colorway ${cid}.`, "Create the colorway first.");
@@ -650,7 +666,7 @@ export class DrapeState extends DurableObject<Env> {
   }
 
   private async reconcile(req: Request): Promise<Response> {
-    await this.seller(req);
+    await this.seller(req, { write: true });
     const body = (await req.json().catch(() => ({}))) as { id?: string; outcome?: string };
     if (!body.id || (body.outcome !== "charged" && body.outcome !== "not_charged")) throw bad("Send {id, outcome: charged|not_charged}.", "Check the YouCam console for that task.");
     const ok = body.outcome === "charged" ? this.ledger.commit(body.id) : this.ledger.release(body.id);

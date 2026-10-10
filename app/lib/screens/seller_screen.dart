@@ -30,6 +30,8 @@ class _SellerScreenState extends State<SellerScreen> {
   String? _status;
   bool _busy = false;
   bool get _signedIn => widget.api.sellerKey != null && _ledger != null;
+  /// Signed in with the judge key: everything is visible, nothing can be changed (the server enforces it too).
+  bool get _readOnly => _ledger?['role'] == 'judge';
 
   @override
   void initState() {
@@ -165,8 +167,13 @@ class _SellerScreenState extends State<SellerScreen> {
     final used = n('used');
     final stuck = ((l['stuckEntries'] as List?) ?? const []).cast<Map>();
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      if (_readOnly) ...[
+        const Notice(text: 'View-only judge access. Look around freely; saving, photo uploads and unit reconciling are turned off.'),
+        const SizedBox(height: 20),
+      ],
       Row(children: [
         Expanded(child: Text('Overview', style: t.headlineSmall)),
+        if (_readOnly) ...[const Tag(text: 'View only', icon: Icons.visibility_outlined, color: Tone.mulberry, bg: Tone.mulberrySoft), const SizedBox(width: 8)],
         Tag(
           text: budget > 0 ? 'Live try-on on' : 'Demo mode',
           icon: budget > 0 ? Icons.circle : Icons.circle_outlined,
@@ -185,7 +192,7 @@ class _SellerScreenState extends State<SellerScreen> {
         ];
         final perRow = c.maxWidth > 900 ? 5 : (c.maxWidth > 560 ? 3 : 2);
         final w = (c.maxWidth - 12 * (perRow - 1)) / perRow;
-        return Wrap(spacing: 12, runSpacing: 12, children: [for (final k in tiles) SizedBox(width: w, height: 124, child: k)]);
+        return Wrap(spacing: 12, runSpacing: 12, children: [for (final k in tiles) SizedBox(width: w, child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 124), child: k))]);
       }),
       if (stuck.isNotEmpty) ...[
         const SizedBox(height: 16),
@@ -205,8 +212,8 @@ class _SellerScreenState extends State<SellerScreen> {
                 child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 12, runSpacing: 8, children: [
                   Text('${e['jobType']} · ${e['units']} units', style: t.titleMedium?.copyWith(fontSize: 16)),
                   Text('${e['id']}', style: t.bodySmall),
-                  OutlinedButton(onPressed: _busy ? null : () => _reconcile('${e['id']}', true), child: const Text('It was charged')),
-                  OutlinedButton(onPressed: _busy ? null : () => _reconcile('${e['id']}', false), child: const Text('Not charged')),
+                  OutlinedButton(onPressed: _busy || _readOnly ? null : () => _reconcile('${e['id']}', true), child: const Text('It was charged')),
+                  OutlinedButton(onPressed: _busy || _readOnly ? null : () => _reconcile('${e['id']}', false), child: const Text('Not charged')),
                 ]),
               ),
           ]),
@@ -223,6 +230,7 @@ class _SellerScreenState extends State<SellerScreen> {
             key: ValueKey(_selected?.id ?? 'new'),
             product: _selected,
             busy: _busy,
+            readOnly: _readOnly,
             onSave: (json) => _act(() async {
               final p = await widget.api.upsertProduct(json);
               _products = await widget.api.catalog(widget.publishableKey);
@@ -291,7 +299,7 @@ class _SellerScreenState extends State<SellerScreen> {
             ),
           Padding(
             padding: const EdgeInsets.all(8),
-            child: OutlinedButton.icon(onPressed: () => setState(() => _selected = null), icon: const Icon(Icons.add_rounded), label: const Text('New product')),
+            child: OutlinedButton.icon(onPressed: _readOnly ? null : () => setState(() => _selected = null), icon: const Icon(Icons.add_rounded), label: const Text('New product')),
           ),
         ]),
       );
@@ -311,7 +319,6 @@ class _Kpi extends StatelessWidget {
     return DrapeCard(
       padding: const EdgeInsets.all(16),
       color: warn ? Tone.avoidSoft : Tone.surface,
-      expand: true,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label.toUpperCase(), style: t.labelMedium?.copyWith(fontSize: 12)),
         const SizedBox(height: 6),
@@ -355,9 +362,10 @@ class _CwRow {
 }
 
 class _ProductEditor extends StatefulWidget {
-  const _ProductEditor({super.key, required this.product, required this.busy, required this.onSave, required this.onUpload, required this.api});
+  const _ProductEditor({super.key, required this.product, required this.busy, this.readOnly = false, required this.onSave, required this.onUpload, required this.api});
   final Product? product;
   final bool busy;
+  final bool readOnly;
   final Future<void> Function(Map<String, dynamic>) onSave;
   final Future<void> Function(String productId, String colorwayId) onUpload;
   final DrapeApi api;
@@ -429,22 +437,24 @@ class _ProductEditorState extends State<_ProductEditor> {
       ]),
       section('Details', null),
       Wrap(spacing: 12, runSpacing: 12, children: [
-        SizedBox(width: 220, child: TextField(controller: _id, enabled: !editing, decoration: const InputDecoration(labelText: 'Product id', hintText: 'abaya-classic'))),
-        SizedBox(width: 280, child: TextField(controller: _name, decoration: const InputDecoration(labelText: 'Name'))),
-        SizedBox(width: 130, child: TextField(controller: _price, decoration: const InputDecoration(labelText: 'Price'))),
+        SizedBox(width: 220, child: TextField(controller: _id, enabled: !editing && !widget.readOnly, decoration: const InputDecoration(labelText: 'Product id', hintText: 'abaya-classic'))),
+        SizedBox(width: 280, child: TextField(controller: _name, readOnly: widget.readOnly, decoration: const InputDecoration(labelText: 'Name'))),
+        SizedBox(width: 130, child: TextField(controller: _price, readOnly: widget.readOnly, decoration: const InputDecoration(labelText: 'Price'))),
         SizedBox(
           width: 200,
           child: DropdownButtonFormField<String>(
+            isExpanded: true,
             initialValue: _category,
             decoration: const InputDecoration(labelText: 'Garment category'),
             items: [for (final c in _categories) DropdownMenuItem(value: c, child: Text(c))],
-            onChanged: (v) => setState(() => _category = v ?? _category),
+            onChanged: widget.readOnly ? null : (v) => setState(() => _category = v ?? _category),
           ),
         ),
       ]),
       section('Where you sell it', 'Shoppers using the Drape extension on these pages land straight on this product.'),
       TextField(
         controller: _links,
+        readOnly: widget.readOnly,
         minLines: 2,
         maxLines: 5,
         decoration: const InputDecoration(labelText: 'Product page links, one per line'),
@@ -467,19 +477,20 @@ class _ProductEditorState extends State<_ProductEditor> {
                     : Image.network(widget.api.abs(r.image), fit: BoxFit.contain, errorBuilder: (_, _, _) => const SizedBox()),
               ),
             ),
-            SizedBox(width: 130, child: TextField(controller: r.id, decoration: const InputDecoration(labelText: 'Id'))),
-            SizedBox(width: 160, child: TextField(controller: r.name, decoration: const InputDecoration(labelText: 'Name'))),
+            SizedBox(width: 130, child: TextField(controller: r.id, readOnly: widget.readOnly, decoration: const InputDecoration(labelText: 'Id'))),
+            SizedBox(width: 160, child: TextField(controller: r.name, readOnly: widget.readOnly, decoration: const InputDecoration(labelText: 'Name'))),
             SizedBox(
               width: 150,
               child: TextField(
                 controller: r.hex,
+                readOnly: widget.readOnly,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   labelText: 'Colour',
                   hintText: '#rrggbb',
                   prefixIcon: IconButton(
                     tooltip: 'Pick from palette',
-                    onPressed: () => _pick(r),
+                    onPressed: widget.readOnly ? null : () => _pick(r),
                     icon: RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(r.hex.text)
                         ? Container(width: 20, height: 20, decoration: BoxDecoration(color: hexColor(r.hex.text), shape: BoxShape.circle, border: Border.all(color: Colors.black12)))
                         : const Icon(Icons.palette_outlined, size: 20),
@@ -491,25 +502,25 @@ class _ProductEditorState extends State<_ProductEditor> {
               tooltip: 'Pick from palette',
               constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               style: IconButton.styleFrom(side: const BorderSide(color: Tone.line), backgroundColor: Tone.surface),
-              onPressed: () => _pick(r),
+              onPressed: widget.readOnly ? null : () => _pick(r),
               icon: const Icon(Icons.palette_outlined, color: Tone.mulberry),
             ),
             if (editing)
               OutlinedButton.icon(
-                onPressed: widget.busy || r.id.text.isEmpty ? null : () => widget.onUpload(widget.product!.id, r.id.text.trim()),
+                onPressed: widget.busy || widget.readOnly || r.id.text.isEmpty ? null : () => widget.onUpload(widget.product!.id, r.id.text.trim()),
                 icon: const Icon(Icons.upload_rounded, size: 18),
                 label: Text(r.image.isEmpty ? 'Upload photo' : 'Replace photo'),
               ),
           ]),
         ),
-      Align(alignment: AlignmentDirectional.centerStart, child: TextButton.icon(onPressed: _addRow, icon: const Icon(Icons.add_rounded), label: const Text('Add colourway'))),
+      Align(alignment: AlignmentDirectional.centerStart, child: TextButton.icon(onPressed: widget.readOnly ? null : _addRow, icon: const Icon(Icons.add_rounded), label: const Text('Add colourway'))),
       if (!editing) Text('Save the product first, then upload a photo for each colourway.', style: t.bodySmall),
       const SizedBox(height: 20),
       const Divider(),
       const SizedBox(height: 16),
       Align(
         alignment: AlignmentDirectional.centerEnd,
-        child: FilledButton(onPressed: widget.busy ? null : () => widget.onSave(_json()), child: Text(editing ? 'Save changes' : 'Create product')),
+        child: FilledButton(onPressed: widget.busy || widget.readOnly ? null : () => widget.onSave(_json()), child: Text(editing ? 'Save changes' : 'Create product')),
       ),
     ]);
   }

@@ -14,7 +14,7 @@ node test/e2e/mock-youcam.mjs $MOCK > /tmp/drape-mock.log 2>&1 & MOCK_PID=$!
 npx wrangler dev --port $PORT --persist-to /tmp/drape-e2e-state \
   --var YOUCAM_MODE:live --var YOUCAM_LIVE_BUDGET:30 --var YOUCAM_API_KEY:test-key \
   --var YOUCAM_API_BASE:http://localhost:$MOCK/s2s/v2.0 --var FACES_PER_VISITOR_PER_DAY:1 \
-  --var SESSION_SECRET:e2e-only-secret --var SELLER_SECRET:sk_e2e_only > /tmp/drape-e2e.log 2>&1 & DEV_PID=$!
+  --var SESSION_SECRET:e2e-only-secret --var SELLER_SECRET:sk_e2e_only --var JUDGE_SELLER_KEY:sk_judge_e2e > /tmp/drape-e2e.log 2>&1 & DEV_PID=$!
 trap 'kill $MOCK_PID $DEV_PID 2>/dev/null; rm -rf /tmp/drape-e2e-state' EXIT
 for i in $(seq 1 60); do curl -sf "$B/health" >/dev/null && break; sleep 1; done
 
@@ -66,6 +66,20 @@ T2=$(curl -s -X POST $B/v1/sessions -H 'content-type: application/json' -d '{"ke
 curl -s -X POST "$B/v1/sessions/me/photos?kind=face" -H "authorization: Bearer $T2" --data-binary @public/persona/face.jpg > /dev/null
 J=$(curl -s -X POST $B/v1/sessions/me/jobs -H "authorization: Bearer $T2" -H 'content-type: application/json' -d '{"type":"color_reading"}' | js 'j.job.id')
 check "a face reading past the budget falls back to the labelled sample" "$(curl -s "$B/v1/jobs/$J" -H "authorization: Bearer $T2" | js 'j.job.result.sample')" "true"
+
+echo "judge (view-only) seller key"
+JH="authorization: Bearer sk_judge_e2e"; OH="authorization: Bearer sk_e2e_only"
+check "judge key reads the ledger" "$(curl -s $B/v1/admin/ledger -H "$JH" | js 'j.role')" "judge"
+check "owner key reads the ledger as owner" "$(curl -s $B/v1/admin/ledger -H "$OH" | js 'j.role')" "owner"
+check "judge key reads all products" "$(curl -s -o /dev/null -w '%{http_code}' $B/v1/admin/products -H "$JH")" "200"
+PROD='{"id":"judge-test","name":"Judge test","category":"full_body","colorways":[{"id":"black","name":"Black","hex":"#111111"}]}'
+check "judge key cannot save a product" "$(curl -s -X POST $B/v1/products -H "$JH" -H 'content-type: application/json' -d "$PROD" | js 'j.error.code')" "DRAPE_READ_ONLY"
+check "judge key cannot upload a colourway photo" "$(curl -s -X PUT $B/v1/products/abaya-classic/colorways/black/image -H "$JH" --data-binary @public/persona/face.jpg | js 'j.error.code')" "DRAPE_READ_ONLY"
+check "judge key cannot reconcile units" "$(curl -s -X POST $B/v1/admin/reconcile -H "$JH" -H 'content-type: application/json' -d '{"id":"x","charged":false}' | js 'j.error.code')" "DRAPE_READ_ONLY"
+check "the server still answers after the refused upload" "$(curl -s -o /dev/null -w '%{http_code}' $B/v1/admin/ledger -H "$JH")" "200"
+check "judge key did not create the product" "$(curl -s -o /dev/null -w '%{http_code}' $B/v1/products/judge-test)" "404"
+check "a wrong key is still refused" "$(curl -s $B/v1/admin/ledger -H 'authorization: Bearer sk_nope' | js 'j.error.code')" "DRAPE_UNAUTHORIZED"
+check "owner key can still save" "$(curl -s -X POST $B/v1/products -H "$OH" -H 'content-type: application/json' -d "$PROD" | js 'j.product.id')" "judge-test"
 
 echo "delete"
 check "delete session" "$(curl -s -X DELETE $B/v1/sessions/me -H "$H" | js 'j.deleted')" "true"
