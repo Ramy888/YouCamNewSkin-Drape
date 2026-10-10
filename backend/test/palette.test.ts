@@ -73,6 +73,9 @@ describe("verdictFor", () => {
     expect(v.verdict).toBe("avoid");
     expect(v.closest.id).toBe("icy-pink");
   });
+  it("calls a cool bubblegum pink 'avoid' for a warm reading", () => {
+    expect(verdictFor(warm, "#ed9ece").verdict).toBe("avoid");
+  });
   it("returns neutral for a colour far from every swatch", () => {
     expect(verdictFor(warm, "#7a00ff").verdict).toBe("neutral");
   });

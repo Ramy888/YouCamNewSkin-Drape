@@ -19,7 +19,7 @@ KEY = env["YOUCAM_API_KEY"].strip()
 BASE = env.get("YOUCAM_API_BASE", "https://yce-api-01.makeupar.com/s2s/v2.0").strip()
 H = {"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
 scrub = lambda o: json.dumps(o)[:600].replace(KEY, "***")
-CATEGORY = {"abaya-classic": "full_body"}
+CATEGORY = {"abaya-classic": "full_body", "kaftan-coat": "outer"}
 WARM_LIP = "#b5523b"  # persona reads warm; must match backend/src/palette-rules.json palettes.warm.lip
 
 

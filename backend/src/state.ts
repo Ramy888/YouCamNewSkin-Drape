@@ -49,7 +49,7 @@ interface SessionRow {
 }
 
 /** Bump when SEED_PRODUCTS changes so deployed stores pick up the new seed catalogue. */
-const SEED_VERSION = "3";
+const SEED_VERSION = "4";
 const SEED_PRODUCTS: Omit<Product, "storeId" | "status">[] = [
   {
     id: "abaya-classic",
@@ -63,6 +63,18 @@ const SEED_PRODUCTS: Omit<Product, "storeId" | "status">[] = [
       { id: "lavender", name: "Lavender", hex: "#b7a6d8", image: "/catalog/abaya-classic_lavender.jpg" },
     ],
     links: ["https://noor-modest.ramy-comm.workers.dev/"],
+  },
+  {
+    id: "kaftan-coat",
+    name: "Woven kaftan coat",
+    category: "outer",
+    price: 1450,
+    currency: "EGP",
+    colorways: [
+      { id: "saffron", name: "Saffron", hex: "#deaa4b", image: "/catalog/kaftan-coat_saffron.jpg" },
+      { id: "aqua", name: "Aqua", hex: "#4ab8b5", image: "/catalog/kaftan-coat_aqua.jpg" },
+      { id: "blush", name: "Blush pink", hex: "#ed9ece", image: "/catalog/kaftan-coat_blush.jpg" },
+    ],
   },
 ];
 

@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-10.1",
+  "version": "2026-10-10.2",
   "undertone": {
     "comment": "Hue angle (degrees) of the skin colour in CIELAB a*/b*. Higher = more yellow (warm), lower = more pink (cool).",
     "warmMinHue": 58,
@@ -12,71 +12,235 @@
   },
   "shift": {
     "comment": "The buyer's 'warmer / cooler' override moves the undertone one step.",
-    "order": ["cool", "neutral", "warm"]
+    "order": [
+      "cool",
+      "neutral",
+      "warm"
+    ]
   },
   "palettes": {
     "warm": {
       "metal": "gold",
-      "lip": { "name": "Brick coral", "hex": "#b5523b" },
+      "lip": {
+        "name": "Brick coral",
+        "hex": "#b5523b"
+      },
       "suits": [
-        { "id": "emerald", "name": "Emerald", "hex": "#1f7a55" },
-        { "id": "olive", "name": "Olive", "hex": "#6b7a3a" },
-        { "id": "terracotta", "name": "Terracotta", "hex": "#b8603e" },
-        { "id": "mustard", "name": "Mustard", "hex": "#c99a2e" },
-        { "id": "camel", "name": "Camel", "hex": "#b98a5a" },
-        { "id": "teal", "name": "Deep teal", "hex": "#1f5f63" },
-        { "id": "warm-red", "name": "Tomato red", "hex": "#c0392b" },
-        { "id": "cream", "name": "Cream", "hex": "#efe3c8" }
+        {
+          "id": "emerald",
+          "name": "Emerald",
+          "hex": "#1f7a55"
+        },
+        {
+          "id": "olive",
+          "name": "Olive",
+          "hex": "#6b7a3a"
+        },
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#b8603e"
+        },
+        {
+          "id": "mustard",
+          "name": "Mustard",
+          "hex": "#c99a2e"
+        },
+        {
+          "id": "camel",
+          "name": "Camel",
+          "hex": "#b98a5a"
+        },
+        {
+          "id": "teal",
+          "name": "Deep teal",
+          "hex": "#1f5f63"
+        },
+        {
+          "id": "warm-red",
+          "name": "Tomato red",
+          "hex": "#c0392b"
+        },
+        {
+          "id": "cream",
+          "name": "Cream",
+          "hex": "#efe3c8"
+        }
       ],
       "avoid": [
-        { "id": "icy-pink", "name": "Icy pink", "hex": "#f2c8d8" },
-        { "id": "cool-grey", "name": "Cool grey", "hex": "#9aa3ad" },
-        { "id": "lavender", "name": "Lavender", "hex": "#b7a6d8" },
-        { "id": "fuchsia", "name": "Fuchsia", "hex": "#c2185b" }
+        {
+          "id": "icy-pink",
+          "name": "Icy pink",
+          "hex": "#f2c8d8"
+        },
+        {
+          "id": "cool-grey",
+          "name": "Cool grey",
+          "hex": "#9aa3ad"
+        },
+        {
+          "id": "lavender",
+          "name": "Lavender",
+          "hex": "#b7a6d8"
+        },
+        {
+          "id": "fuchsia",
+          "name": "Fuchsia",
+          "hex": "#c2185b"
+        },
+        {
+          "id": "bubblegum",
+          "name": "Bubblegum pink",
+          "hex": "#e89cc8"
+        }
       ]
     },
     "cool": {
       "metal": "silver",
-      "lip": { "name": "Berry", "hex": "#9b2d4f" },
+      "lip": {
+        "name": "Berry",
+        "hex": "#9b2d4f"
+      },
       "suits": [
-        { "id": "navy", "name": "Navy", "hex": "#1f2f5a" },
-        { "id": "berry", "name": "Berry", "hex": "#8e2a52" },
-        { "id": "cool-red", "name": "Cherry red", "hex": "#b0173a" },
-        { "id": "icy-blue", "name": "Icy blue", "hex": "#a9c6e8" },
-        { "id": "lavender", "name": "Lavender", "hex": "#a593cf" },
-        { "id": "charcoal", "name": "Charcoal", "hex": "#3a3d44" },
-        { "id": "sapphire", "name": "Sapphire", "hex": "#24479a" },
-        { "id": "pure-white", "name": "Pure white", "hex": "#f7f8fa" }
+        {
+          "id": "navy",
+          "name": "Navy",
+          "hex": "#1f2f5a"
+        },
+        {
+          "id": "berry",
+          "name": "Berry",
+          "hex": "#8e2a52"
+        },
+        {
+          "id": "cool-red",
+          "name": "Cherry red",
+          "hex": "#b0173a"
+        },
+        {
+          "id": "icy-blue",
+          "name": "Icy blue",
+          "hex": "#a9c6e8"
+        },
+        {
+          "id": "lavender",
+          "name": "Lavender",
+          "hex": "#a593cf"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3a3d44"
+        },
+        {
+          "id": "sapphire",
+          "name": "Sapphire",
+          "hex": "#24479a"
+        },
+        {
+          "id": "pure-white",
+          "name": "Pure white",
+          "hex": "#f7f8fa"
+        }
       ],
       "avoid": [
-        { "id": "orange", "name": "Orange", "hex": "#e07b22" },
-        { "id": "mustard", "name": "Mustard", "hex": "#c99a2e" },
-        { "id": "camel", "name": "Camel", "hex": "#b98a5a" },
-        { "id": "olive", "name": "Olive", "hex": "#6b7a3a" }
+        {
+          "id": "orange",
+          "name": "Orange",
+          "hex": "#e07b22"
+        },
+        {
+          "id": "mustard",
+          "name": "Mustard",
+          "hex": "#c99a2e"
+        },
+        {
+          "id": "camel",
+          "name": "Camel",
+          "hex": "#b98a5a"
+        },
+        {
+          "id": "olive",
+          "name": "Olive",
+          "hex": "#6b7a3a"
+        }
       ]
     },
     "neutral": {
       "metal": "rose gold",
-      "lip": { "name": "Rose", "hex": "#b5646b" },
+      "lip": {
+        "name": "Rose",
+        "hex": "#b5646b"
+      },
       "suits": [
-        { "id": "jade", "name": "Jade", "hex": "#2e8b6e" },
-        { "id": "dusty-rose", "name": "Dusty rose", "hex": "#c4868e" },
-        { "id": "soft-navy", "name": "Soft navy", "hex": "#34466e" },
-        { "id": "taupe", "name": "Taupe", "hex": "#8b7d70" },
-        { "id": "soft-teal", "name": "Soft teal", "hex": "#3f7f86" },
-        { "id": "plum", "name": "Plum", "hex": "#6e3b5a" },
-        { "id": "off-white", "name": "Off white", "hex": "#f1ede4" }
+        {
+          "id": "jade",
+          "name": "Jade",
+          "hex": "#2e8b6e"
+        },
+        {
+          "id": "dusty-rose",
+          "name": "Dusty rose",
+          "hex": "#c4868e"
+        },
+        {
+          "id": "soft-navy",
+          "name": "Soft navy",
+          "hex": "#34466e"
+        },
+        {
+          "id": "taupe",
+          "name": "Taupe",
+          "hex": "#8b7d70"
+        },
+        {
+          "id": "soft-teal",
+          "name": "Soft teal",
+          "hex": "#3f7f86"
+        },
+        {
+          "id": "plum",
+          "name": "Plum",
+          "hex": "#6e3b5a"
+        },
+        {
+          "id": "off-white",
+          "name": "Off white",
+          "hex": "#f1ede4"
+        }
       ],
       "avoid": [
-        { "id": "neon-yellow", "name": "Neon yellow", "hex": "#e8e52a" },
-        { "id": "electric-orange", "name": "Electric orange", "hex": "#ff6a13" }
+        {
+          "id": "neon-yellow",
+          "name": "Neon yellow",
+          "hex": "#e8e52a"
+        },
+        {
+          "id": "electric-orange",
+          "name": "Electric orange",
+          "hex": "#ff6a13"
+        }
       ]
     }
   },
-  "lowContrastAvoid": [{ "id": "black", "name": "Jet black", "hex": "#111111" }],
+  "lowContrastAvoid": [
+    {
+      "id": "black",
+      "name": "Jet black",
+      "hex": "#111111"
+    }
+  ],
   "highContrastSuits": [
-    { "id": "black", "name": "Jet black", "hex": "#111111" },
-    { "id": "white", "name": "Crisp white", "hex": "#fafafa" }
+    {
+      "id": "black",
+      "name": "Jet black",
+      "hex": "#111111"
+    },
+    {
+      "id": "white",
+      "name": "Crisp white",
+      "hex": "#fafafa"
+    }
   ],
   "verdict": {
     "comment": "Delta-E (CIE76) thresholds for matching a garment colour to the palette.",
