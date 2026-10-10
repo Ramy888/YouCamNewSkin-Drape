@@ -46,6 +46,8 @@ export function mapTaskError(code: string, message?: string): YouCamError {
   if (code === "error_nsfw_content_detected") {
     return new YouCamError("rejected", code, "This photo can't be used. Please choose a different one.", false);
   }
+  // Earring VTO reports covered ears as a bare numeric code plus "earlobe alignment not confident."
+  if (message && /earlobe/i.test(message)) code = "error_face_parsing";
   const advice = PHOTO_ADVICE[code] ?? (code.startsWith("error_face") ? "Face the camera straight on in even light." : undefined);
   if (advice) return new YouCamError("user_photo", code, advice, false);
   return new YouCamError("upstream", code, message ? `The try-on service said: ${message}` : "The try-on service couldn't process this photo.", true);

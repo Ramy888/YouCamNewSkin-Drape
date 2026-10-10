@@ -128,9 +128,9 @@ Done (deployed, replay mode):
 - [x] README, MIT licence, CI (typecheck, unit, e2e, secret scan, extension guard)
 
 Waiting for the live switch (needs Ramy's approval, spends units):
-- [ ] Persona renders for every catalogue colourway, persona makeup and earrings (`docs/derisk/render_persona.py`)
+- [x] Persona renders for every catalogue colourway and persona makeup (earrings fail on the sample: ears covered by hair)
 - [ ] Optional: a consented persona photo set (face + full body) to replace the YouCam sample images
-- [ ] `wrangler secret put YOUCAM_API_KEY`, `YOUCAM_MODE=live`, `YOUCAM_LIVE_BUDGET` (judging reserve)
+- [x] `YOUCAM_API_KEY` secret set; live with budget 400 via `npm run deploy:live` (config file stays replay)
 
 Open:
 - [ ] Arabic copy review by a native speaker; DESIGN.md (/design-consultation)

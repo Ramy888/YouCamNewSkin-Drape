@@ -132,6 +132,12 @@ describe("earrings", () => {
   it("tells the buyer covered ears are fine", () => {
     expect(mapTaskError("error_face_parsing").userMessage).toMatch(/ears/);
   });
+  it("treats the real earlobe failure (code \"2\", seen live 2026-10-10) as covered ears, not a service fault", () => {
+    const e = mapTaskError("2", "earlobe alignment not confident.");
+    expect(e.youcamCode).toBe("error_face_parsing");
+    expect(e.kind).toBe("user_photo");
+    expect(e.retryable).toBe(false);
+  });
 });
 
 describe("images", () => {

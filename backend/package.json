@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "deploy:live": "wrangler deploy --var YOUCAM_MODE:live --var YOUCAM_LIVE_BUDGET:400",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "test:e2e": "bash test/e2e/live-flow.sh"
