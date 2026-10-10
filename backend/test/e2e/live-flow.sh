@@ -13,7 +13,8 @@ js() { node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=
 node test/e2e/mock-youcam.mjs $MOCK > /tmp/drape-mock.log 2>&1 & MOCK_PID=$!
 npx wrangler dev --port $PORT --persist-to /tmp/drape-e2e-state \
   --var YOUCAM_MODE:live --var YOUCAM_LIVE_BUDGET:30 --var YOUCAM_API_KEY:test-key \
-  --var YOUCAM_API_BASE:http://localhost:$MOCK/s2s/v2.0 --var FACES_PER_VISITOR_PER_DAY:1 > /tmp/drape-e2e.log 2>&1 & DEV_PID=$!
+  --var YOUCAM_API_BASE:http://localhost:$MOCK/s2s/v2.0 --var FACES_PER_VISITOR_PER_DAY:1 \
+  --var SESSION_SECRET:e2e-only-secret --var SELLER_SECRET:sk_e2e_only > /tmp/drape-e2e.log 2>&1 & DEV_PID=$!
 trap 'kill $MOCK_PID $DEV_PID 2>/dev/null; rm -rf /tmp/drape-e2e-state' EXIT
 for i in $(seq 1 60); do curl -sf "$B/health" >/dev/null && break; sleep 1; done
 
