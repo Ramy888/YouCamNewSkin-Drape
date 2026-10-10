@@ -114,26 +114,26 @@ Ledger (≈959 left after gate 2): seller pre-flight ≈36u · judging reserve 4
 - Images are validated and resized before upload (EXIF orientation, long side ≤1920, ≤10MB, JPG/PNG); `face_quality` from Color Tones feeds the retake copy.
 - Hijab overlay: choose client-side face landmarks or a fixed oval guide before building; fallback is colour swatches framing the face crop.
 
-## Build tasks
+## Build tasks (status 2026-10-10)
 
-P1 (blocks ship):
-- [ ] Hosting + storage choice; `git` remote; README skeleton
-- [ ] YouCam adapter (replay|live) from `docs/derisk/run_gate2.py`, named error mapping, fixture tests
-- [ ] Job model + SQLite unit ledger + two-process cap test
-- [ ] Per-visitor/daily caps, judge code, auto-replay below reserve, kill switch
-- [ ] Palette engine: hex → Lab → undertone/contrast → palette (fixture-driven unit tests)
-- [ ] Cache, 24h sweeper, DELETE purge, EXIF strip
-- [ ] v1 API with publishable/secret keys, allowlist, error envelope
-- [ ] `embed/v1.js` + `drape:add-to-cart` + console warnings; synthetic sample store
-- [ ] Buyer app: two-photo capture, reveal, Compare, complete the look, look card, state table, RTL
-- [ ] Seller console: auth, product + colourways, pre-flight, publish
-- [ ] `/health`, uptime monitor, CI bundle-key grep, zero-egress fresh-clone test
-- [ ] Root README with the 60-second judge path
+Done (deployed, replay mode):
+- [x] Cloudflare Worker + Durable Object (SQLite unit ledger, sessions, jobs), R2, hourly sweep cron, `/health`
+- [x] YouCam adapter replay|live; named error mapping; live path proven end to end against a mock (`npm run test:e2e`)
+- [x] Unit ledger reserve/commit/release/stuck + reconcile; per-visitor and daily caps; auto-replay after upstream failures; kill switch
+- [x] Palette engine from Color Tones hex (versioned rules); warmer/cooler override
+- [x] Cache/dedupe, 24h deletion, DELETE purge, EXIF strip; seller auth; error envelope; CORS only for public catalogue reads
+- [x] `embed/v1.js` + `drape:add-to-cart`; Noor Modest demo shop on its own domain
+- [x] Flutter web app: capture, hijab-drape reveal, shop with verdicts, Compare, makeup + earrings, look card, Arabic RTL, seller console
+- [x] Earrings VTO (2D) in the palette metal; listing links + `/v1/lookup`; URL-only Chrome extension (activeTab only)
+- [x] README, MIT licence, CI (typecheck, unit, e2e, secret scan, extension guard)
 
-P2:
-- [ ] DESIGN.md via /design-consultation; reveal + Compare mockups via /design-shotgun
-- [ ] Synthetic catalogue: 6 SKUs × 3 colourways (pre-flight ≈36u, needs Ramy's approval)
-- [ ] Hijab overlay method
-- [ ] Extension (stretch)
+Waiting for the live switch (needs Ramy's approval, spends units):
+- [ ] Persona renders for every catalogue colourway, persona makeup and earrings (`docs/derisk/render_persona.py`)
+- [ ] Optional: a consented persona photo set (face + full body) to replace the YouCam sample images
+- [ ] `wrangler secret put YOUCAM_API_KEY`, `YOUCAM_MODE=live`, `YOUCAM_LIVE_BUDGET` (judging reserve)
+
+Open:
+- [ ] Arabic copy review by a native speaker; DESIGN.md (/design-consultation)
+- [ ] Repo public (licence in place) or shared with contact_event@PerfectCorp.com; demo video
 
 Test plan: `~/.gstack/projects/Developer/ramymagdy-no-branch-eng-review-test-plan-20261010-200636.md`.
