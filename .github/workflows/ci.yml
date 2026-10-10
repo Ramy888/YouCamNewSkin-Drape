@@ -1,0 +1,27 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: backend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: No YouCam key or secret in shipped static files
+        run: |
+          # Keys are 32+ char tokens; the API key must never be in public/ (the Flutter bundle lives there).
+          if grep -rIlE "(YOUCAM_API_KEY|sk_[0-9a-f]{24,}|Bearer [A-Za-z0-9_\-]{30,})" public/; then
+            echo "Secret-like string found in public/"; exit 1; fi
+      - name: Replay mode makes zero calls to YouCam
+        run: |
+          npx wrangler dev --port 8787 > dev.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf localhost:8787/health && break; sleep 1; done
+          T=$(curl -s -X POST localhost:8787/v1/sessions -H 'content-type: application/json' -d '{"key":"pk_demo_drape","persona":true}' | node -pe 'JSON.parse(require("fs").readFileSync(0)).token')
+          for body in '{"type":"color_reading"}' '{"type":"tryon","productId":"abaya-classic","colorwayId":"emerald"}'; do
+            curl -sf -X POST localhost:8787/v1/sessions/me/jobs -H "authorization: Bearer $T" -H 'content-type: application/json' -d "$body" > /dev/null
+          done
+          if grep -q makeupar dev.log; then echo "YouCam was called in replay mode"; exit 1; fi

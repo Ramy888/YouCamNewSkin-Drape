@@ -1,0 +1,9 @@
+{
+  // Synthetic demo shop on its own domain, to show Drape working as a third-party embed. Static files only.
+  "$schema": "../../backend/node_modules/wrangler/config-schema.json",
+  "name": "noor-modest",
+  "compatibility_date": "2026-09-15",
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": { "directory": "./public" }
+}

@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+.vscode/
+node_modules/
+.wrangler/
+.dev.vars
+app/build/
+app/.dart_tool/
+.DS_Store

@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "drape",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "none",
+    "run_worker_first": ["/v1/*", "/health", "/"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "DRAPE", "class_name": "DrapeState" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DrapeState"] }],
+  "r2_buckets": [{ "binding": "FILES", "bucket_name": "drape-files" }],
+  "triggers": { "crons": ["17 * * * *"] },
+  "vars": {
+    // replay = recorded results, 0 YouCam units. "live" also needs YOUCAM_API_KEY (secret) and a budget above 0.
+    "YOUCAM_MODE": "replay",
+    "YOUCAM_LIVE_BUDGET": "0",
+    "DAILY_UNIT_CAP": "120",
+    "FACES_PER_VISITOR_PER_DAY": "1",
+    "FORCE_REPLAY": "0",
+    "DEMO_PUBLISHABLE_KEY": "pk_demo_drape",
+    "ALLOWED_ORIGINS": "https://noor-modest.ramy-comm.workers.dev,http://localhost:8787,http://127.0.0.1:8787,http://localhost:8788",
+    "PUBLIC_ORIGIN": "https://drape.ramy-comm.workers.dev"
+  }
+}

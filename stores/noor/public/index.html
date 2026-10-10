@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Noor Modest — Classic satin abaya</title>
+  <meta name="description" content="Noor Modest is a fictional demo shop used to show the Drape try-on button.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+  <script src="config.js"></script>
+  <style>
+    /* Layout: a two-column product page (gallery | buy box) that stacks on phones, cart as a side sheet. */
+    :root {
+      --ground: #eef0ec;
+      --paper: #f9faf7;
+      --ink: #1d2a2a;
+      --ink-soft: #4a5654;
+      --line: #cdd3cc;
+      --accent: #8a5a12;
+      --accent-ink: #ffffff;
+      --focus: #1f5f63;
+      --display: "Marcellus", Georgia, serif;
+      --body: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.6 var(--body); }
+    a { color: var(--ink); }
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+    .demo-bar { background: var(--ink); color: #e9ecea; font-size: 13px; padding: 6px 16px; text-align: center; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; border-bottom: 1px solid var(--line); background: var(--paper); }
+    .brand { font-family: var(--display); font-size: 26px; letter-spacing: .04em; text-decoration: none; }
+    .brand small { display: block; font-family: var(--body); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--ink-soft); }
+    nav { display: flex; gap: 20px; font-size: 15px; }
+    nav a { text-decoration: none; color: var(--ink-soft); }
+    .cart-btn { min-height: 44px; padding: 0 16px; border: 1px solid var(--ink); background: transparent; color: var(--ink); font: 500 15px var(--body); cursor: pointer; }
+    main { max-width: 1120px; margin: 0 auto; padding: 32px 24px 64px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 48px; }
+    .crumbs { grid-column: 1 / -1; font-size: 14px; color: var(--ink-soft); margin: 0; }
+    .gallery { background: var(--paper); border: 1px solid var(--line); aspect-ratio: 4 / 5; display: grid; place-items: center; overflow: hidden; }
+    .gallery img { width: 100%; height: 100%; object-fit: contain; }
+    h1 { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 4vw, 42px); line-height: 1.15; margin: 0 0 8px; text-wrap: balance; }
+    .price { font-size: 22px; margin: 0 0 24px; font-variant-numeric: tabular-nums; }
+    .label { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 10px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
+    .chip { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px 0 8px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font: 15px var(--body); cursor: pointer; }
+    .chip[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+    .dot { width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(0,0,0,.2); }
+    .sizes { display: flex; gap: 8px; margin-bottom: 28px; }
+    .size { min-width: 52px; min-height: 44px; border: 1px solid var(--line); background: var(--paper); font: 15px var(--body); cursor: pointer; color: var(--ink); }
+    .size[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+    .actions { display: grid; gap: 12px; margin-bottom: 28px; }
+    .add { min-height: 52px; border: 0; background: var(--ink); color: #fff; font: 600 16px var(--body); cursor: pointer; }
+    .drape { min-height: 52px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font: 600 16px var(--body); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .drape:hover { background: var(--accent); color: var(--accent-ink); }
+    .drape svg { width: 20px; height: 20px; }
+    .drape-note { font-size: 14px; color: var(--ink-soft); margin: -16px 0 24px; }
+    details { border-top: 1px solid var(--line); padding: 14px 0; }
+    summary { cursor: pointer; font-weight: 500; }
+    .sheet { position: fixed; inset: 0 0 0 auto; width: min(420px, 100%); background: var(--paper); border-inline-start: 1px solid var(--line); transform: translateX(100%); transition: transform .25s ease-out; padding: 24px; display: flex; flex-direction: column; gap: 16px; z-index: 10; }
+    .sheet.open { transform: none; }
+    .sheet h2 { font-family: var(--display); font-weight: 400; margin: 0; }
+    .line { display: grid; grid-template-columns: 56px 1fr auto; gap: 12px; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+    .line img { width: 56px; height: 70px; object-fit: contain; background: var(--ground); }
+    .line small { color: var(--ink-soft); display: block; }
+    .from-drape { font-size: 12px; color: var(--accent); }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 18px; display: none; z-index: 20; }
+    footer { text-align: center; font-size: 13px; color: var(--ink-soft); padding: 0 16px 32px; }
+    @media (max-width: 760px) {
+      main { grid-template-columns: 1fr; gap: 24px; padding: 20px 16px 48px; }
+      nav { display: none; }
+      header { padding: 14px 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .sheet { transition: none; } }
+  </style>
+</head>
+<body>
+  <div class="demo-bar">Noor Modest is a fictional shop for the Drape demo. Nothing here is for sale.</div>
+  <header>
+    <a class="brand" href="#">Noor<small>Modest wear</small></a>
+    <nav aria-label="Shop sections"><a href="#">Abayas</a><a href="#">Hijabs</a><a href="#">Dresses</a><a href="#">New in</a></nav>
+    <button class="cart-btn" id="cartBtn" aria-controls="cart" aria-expanded="false">Bag (<span id="count">0</span>)</button>
+  </header>
+
+  <main>
+    <p class="crumbs">Abayas / Satin</p>
+    <div class="gallery"><img id="photo" alt="" src=""></div>
+    <section aria-labelledby="title">
+      <h1 id="title">Classic satin abaya</h1>
+      <p class="price" id="price">EGP 890</p>
+
+      <p class="label" id="colourLabel">Colour</p>
+      <div class="chips" id="chips" role="group" aria-labelledby="colourLabel"></div>
+
+      <p class="label" id="sizeLabel">Size</p>
+      <div class="sizes" role="group" aria-labelledby="sizeLabel">
+        <button class="size" aria-pressed="false">52</button>
+        <button class="size" aria-pressed="true">54</button>
+        <button class="size" aria-pressed="false">56</button>
+        <button class="size" aria-pressed="false">58</button>
+      </div>
+
+      <div class="actions">
+        <button class="add" id="add">Add to bag</button>
+        <button class="drape" id="drapeBtn" data-drape-product="abaya-classic" data-drape-colorway="black">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3c-3 0-5 2.2-5 5 0 3.5 2 6 2 9h6c0-3 2-5.5 2-9 0-2.8-2-5-5-5Z"/><path d="M9 21h6"/></svg>
+          Try on with Drape
+        </button>
+      </div>
+      <p class="drape-note">See which colour suits your face before you buy. Your photo is deleted after 24 hours.</p>
+
+      <details open><summary>Details</summary><p>Fluid satin abaya with a contrast piped front, tie belt and long sleeves. Model is 170 cm and wears size 54.</p></details>
+      <details><summary>Delivery and returns</summary><p>Free delivery over EGP 1,500. Returns within 14 days.</p></details>
+    </section>
+  </main>
+
+  <aside class="sheet" id="cart" aria-label="Your bag" aria-hidden="true">
+    <h2>Your bag</h2>
+    <div id="lines"><p>Your bag is empty.</p></div>
+    <button class="add" id="closeCart">Continue shopping</button>
+  </aside>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <footer>Demo shop · try-on powered by Drape and the YouCam API</footer>
+
+  <script>
+    (function () {
+      var DRAPE = window.NOOR_CONFIG.drapeHost;
+      var KEY = window.NOOR_CONFIG.drapeKey;
+      var product = null, colorway = null, bag = [];
+      var $ = function (id) { return document.getElementById(id); };
+
+      function toast(msg) { var t = $("toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(t._h); t._h = setTimeout(function () { t.style.display = "none"; }, 3200); }
+      function img(path) { return path.indexOf("http") === 0 ? path : DRAPE + path; }
+
+      function select(cw) {
+        colorway = cw;
+        $("photo").src = img(cw.image);
+        $("photo").alt = product.name + " in " + cw.name;
+        $("drapeBtn").setAttribute("data-drape-colorway", cw.id);
+        document.querySelectorAll(".chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.id === cw.id)); });
+      }
+
+      function renderBag() {
+        $("count").textContent = bag.length;
+        $("lines").innerHTML = bag.length ? "" : "<p>Your bag is empty.</p>";
+        bag.forEach(function (l) {
+          var d = document.createElement("div"); d.className = "line";
+          d.innerHTML = '<img alt=""><div><strong></strong><small></small></div><span></span>';
+          d.querySelector("img").src = img(l.image);
+          d.querySelector("strong").textContent = l.name;
+          d.querySelector("small").textContent = l.detail;
+          d.querySelector("span").textContent = l.price;
+          if (l.drape) { var f = document.createElement("small"); f.className = "from-drape"; f.textContent = "Picked with Drape"; d.children[1].appendChild(f); }
+          $("lines").appendChild(d);
+        });
+      }
+      function openCart(open) { $("cart").classList.toggle("open", open); $("cart").setAttribute("aria-hidden", String(!open)); $("cartBtn").setAttribute("aria-expanded", String(open)); }
+
+      $("cartBtn").onclick = function () { openCart(true); };
+      $("closeCart").onclick = function () { openCart(false); };
+      document.querySelectorAll(".size").forEach(function (b) { b.onclick = function () { document.querySelectorAll(".size").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); }); }; });
+      $("add").onclick = function () {
+        bag.push({ name: product.name, detail: colorway.name + " · size " + document.querySelector('.size[aria-pressed="true"]').textContent, price: "EGP " + product.price, image: colorway.image });
+        renderBag(); toast("Added to your bag");
+      };
+
+      // Drape hands the chosen look back to the shop's own cart.
+      document.addEventListener("drape:add-to-cart", function (e) {
+        e.detail.items.forEach(function (it) {
+          var cw = (product.colorways.find(function (c) { return c.id === it.colorwayId; })) || colorway;
+          bag.push({ name: product.name, detail: cw.name + " · size 54", price: "EGP " + product.price, image: cw.image, drape: true });
+        });
+        renderBag(); openCart(true); toast("Your Drape look is in your bag");
+      });
+
+      fetch(DRAPE + "/v1/products/abaya-classic").then(function (r) { return r.json(); }).then(function (j) {
+        product = j.product;
+        $("title").textContent = product.name;
+        $("price").textContent = "EGP " + product.price.toLocaleString("en");
+        product.colorways.forEach(function (cw) {
+          var b = document.createElement("button");
+          b.className = "chip"; b.dataset.id = cw.id; b.setAttribute("aria-pressed", "false");
+          b.innerHTML = '<span class="dot" aria-hidden="true"></span><span></span>';
+          b.querySelector(".dot").style.background = cw.hex;
+          b.lastChild.textContent = cw.name;
+          b.onclick = function () { select(cw); };
+          $("chips").appendChild(b);
+        });
+        select(product.colorways[0]);
+      }).catch(function () { toast("Couldn't load the product. Is the Drape host running?"); });
+
+      var s = document.createElement("script");
+      s.src = DRAPE + "/embed/v1.js"; s.async = true; s.setAttribute("data-drape-key", KEY);
+      document.head.appendChild(s);
+    })();
+  </script>
+</body>
+</html>
