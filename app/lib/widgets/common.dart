@@ -8,47 +8,202 @@ import '../theme.dart';
 
 /// A colour swatch that always carries its name, so meaning never depends on colour alone.
 class SwatchChip extends StatelessWidget {
-  const SwatchChip({super.key, required this.name, required this.hex, this.size = 40});
+  const SwatchChip({super.key, required this.name, required this.hex, this.size = 40, this.pill = false});
   final String name;
   final String hex;
   final double size;
+  /// Draw the swatch and name inside a bordered pill (palette lists); plain otherwise (rows, cards).
+  final bool pill;
 
   @override
   Widget build(BuildContext context) {
+    final row = Row(mainAxisSize: MainAxisSize.min, children: [
+      Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: hexColor(hex),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.black.withValues(alpha: 0.12)),
+          boxShadow: const [BoxShadow(color: Color(0x14000000), blurRadius: 3, offset: Offset(0, 1))],
+        ),
+      ),
+      const SizedBox(width: 10),
+      Flexible(child: Text(name, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500))),
+    ]);
     return Semantics(
       label: name,
+      child: pill
+          ? Container(
+              padding: const EdgeInsetsDirectional.fromSTEB(6, 6, 16, 6),
+              decoration: BoxDecoration(color: Tone.surface, borderRadius: BorderRadius.circular(999), border: Border.all(color: Tone.line)),
+              child: row,
+            )
+          : row,
+    );
+  }
+}
+
+/// Text label for a verdict on a tinted pill. Colour is a second cue; the words carry the meaning.
+class VerdictLabel extends StatelessWidget {
+  const VerdictLabel({super.key, required this.verdict, required this.s, this.text});
+  final Verdict? verdict;
+  final S s;
+  /// Overrides the default verdict word (e.g. "Lifts your colouring" on Compare).
+  final String? text;
+
+  @override
+  Widget build(BuildContext context) {
+    final (word, color, bg, icon) = switch (verdict) {
+      Verdict.yours => (s.verdictYours, Tone.yours, Tone.yoursSoft, Icons.check_rounded),
+      Verdict.avoid => (s.verdictAvoid, Tone.avoid, Tone.avoidSoft, Icons.close_rounded),
+      _ => (s.verdictNeutral, Tone.inkSoft, Tone.paperDeep, Icons.remove_rounded),
+    };
+    return Container(
+      padding: const EdgeInsetsDirectional.fromSTEB(8, 4, 12, 4),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(color: hexColor(hex), shape: BoxShape.circle, border: Border.all(color: Tone.line)),
-        ),
-        const SizedBox(width: 8),
-        Text(name, style: Theme.of(context).textTheme.bodyLarge),
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 4),
+        Flexible(child: Text(text ?? word, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: color, letterSpacing: 0.2, fontSize: 14))),
       ]),
     );
   }
 }
 
-/// Text label for a verdict. Colour is a second cue; the words carry the meaning.
-class VerdictLabel extends StatelessWidget {
-  const VerdictLabel({super.key, required this.verdict, required this.s});
-  final Verdict? verdict;
-  final S s;
+/// White card with a hairline border and soft shadow: the basic container on every screen.
+class DrapeCard extends StatelessWidget {
+  const DrapeCard({super.key, required this.child, this.padding = const EdgeInsets.all(20), this.color = Tone.surface, this.expand = false});
+  final Widget child;
+  /// Fill the parent's height (equal-height tiles).
+  final bool expand;
+  final EdgeInsetsGeometry padding;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final (text, color, icon) = switch (verdict) {
-      Verdict.yours => (s.verdictYours, Tone.yours, Icons.check),
-      Verdict.avoid => (s.verdictAvoid, Tone.avoid, Icons.close),
-      _ => (s.verdictNeutral, Tone.inkSoft, Icons.remove),
-    };
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, size: 16, color: color),
-      const SizedBox(width: 4),
-      Text(text, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: color)),
-    ]);
+    return Container(
+      padding: padding,
+      height: expand ? double.infinity : null,
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(16), border: Border.all(color: Tone.line), boxShadow: cardShadow),
+      child: child,
+    );
   }
+}
+
+/// Eyebrow + headline + optional lead, the opening of every buyer screen.
+class StepHeader extends StatelessWidget {
+  const StepHeader({super.key, this.eyebrow, required this.title, this.lead, this.trailing});
+  final String? eyebrow;
+  final String title;
+  final String? lead;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (eyebrow != null) ...[
+          Text(eyebrow!.toUpperCase(), style: t.labelMedium?.copyWith(color: Tone.mulberry, letterSpacing: 1.4)),
+          const SizedBox(height: 8),
+        ],
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(child: Text(title, style: t.headlineSmall?.copyWith(fontSize: 30))),
+          ?trailing,
+        ]),
+        if (lead != null) ...[const SizedBox(height: 8), Text(lead!, style: t.bodyLarge?.copyWith(color: Tone.inkSoft))],
+      ]),
+    );
+  }
+}
+
+/// Small label pill, e.g. "Sample person" or "Live".
+class Tag extends StatelessWidget {
+  const Tag({super.key, required this.text, this.color = Tone.brass, this.bg = const Color(0xFFF4ECDC), this.icon});
+  final String text;
+  final Color color;
+  final Color bg;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (icon != null) ...[Icon(icon, size: 14, color: color), const SizedBox(width: 4)],
+        Text(text, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: color, letterSpacing: 0.3)),
+      ]),
+    );
+  }
+}
+
+/// The Drape mark: an aubergine tile with a drape fold, plus the wordmark.
+class BrandMark extends StatelessWidget {
+  const BrandMark({super.key, this.suffix, this.onDark = false});
+  final String? suffix;
+  final bool onDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    final ink = onDark ? Colors.white : Tone.ink;
+    return Semantics(
+      label: suffix == null ? 'Drape' : 'Drape $suffix',
+      child: ExcludeSemantics(
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(color: onDark ? Colors.white : Tone.mulberry, borderRadius: BorderRadius.circular(8)),
+            child: CustomPaint(painter: _FoldPainter(onDark ? Tone.mulberry : Colors.white)),
+          ),
+          const SizedBox(width: 10),
+          Text('Drape', style: t.headlineSmall?.copyWith(fontSize: 22, color: ink)),
+          if (suffix != null) ...[
+            const SizedBox(width: 10),
+            Container(width: 1, height: 18, color: onDark ? Colors.white24 : Tone.line),
+            const SizedBox(width: 10),
+            Flexible(child: Text(suffix!, overflow: TextOverflow.ellipsis, maxLines: 1, style: t.titleMedium?.copyWith(fontWeight: FontWeight.w500, color: onDark ? Colors.white70 : Tone.inkSoft, fontSize: 16))),
+          ],
+        ]),
+      ),
+    );
+  }
+}
+
+class _FoldPainter extends CustomPainter {
+  _FoldPainter(this.color);
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size s) {
+    final p = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s.width * 0.08
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    // A hood outline with one fold: reads as fabric framing a face.
+    canvas.drawPath(
+      Path()
+        ..moveTo(s.width * 0.28, s.height * 0.80)
+        ..cubicTo(s.width * 0.22, s.height * 0.45, s.width * 0.30, s.height * 0.20, s.width * 0.50, s.height * 0.20)
+        ..cubicTo(s.width * 0.70, s.height * 0.20, s.width * 0.78, s.height * 0.45, s.width * 0.72, s.height * 0.80),
+      p,
+    );
+    canvas.drawPath(
+      Path()
+        ..moveTo(s.width * 0.42, s.height * 0.80)
+        ..quadraticBezierTo(s.width * 0.40, s.height * 0.52, s.width * 0.50, s.height * 0.40),
+      p,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_FoldPainter old) => old.color != color;
 }
 
 class Notice extends StatelessWidget {
@@ -61,15 +216,21 @@ class Notice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = error ? Tone.avoid : Tone.brass;
+    final bg = error ? Tone.avoidSoft : const Color(0xFFF6F0E4);
     return Semantics(
       liveRegion: true,
       child: Container(
-        padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 10, 10),
-        decoration: BoxDecoration(border: BorderDirectional(start: BorderSide(color: color, width: 3)), color: Tone.paperDeep),
-        child: Row(children: [
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 12, 12),
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withValues(alpha: 0.25))),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Icon(error ? Icons.error_outline_rounded : Icons.info_outline_rounded, size: 20, color: color),
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(text, style: Theme.of(context).textTheme.bodyLarge),
+              Text(text, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 16)),
               if (fix != null) Text(fix!, style: Theme.of(context).textTheme.bodyMedium),
             ]),
           ),
@@ -101,11 +262,12 @@ class Progress extends StatelessWidget {
 /// The face photo inside a hijab-shaped drape of [drapeHex]: hood over the head, a wrap under the chin
 /// and fabric falling to the shoulders, so the colour sits next to the face the way a hijab would.
 class DrapedFace extends StatelessWidget {
-  const DrapedFace({super.key, required this.url, required this.drapeHex, required this.label, this.size = 150});
+  const DrapedFace({super.key, required this.url, required this.drapeHex, required this.label, this.size = 150, this.showLabel = true});
   final String url;
   final String drapeHex;
   final String label;
   final double size;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -128,8 +290,7 @@ class DrapedFace extends StatelessWidget {
             Positioned.fill(child: IgnorePointer(child: CustomPaint(painter: _HijabPainter(colour, front: true)))),
           ]),
         ),
-        const SizedBox(height: 8),
-        Text(label, textAlign: TextAlign.center, style: Theme.of(context).textTheme.labelLarge),
+        if (showLabel) ...[const SizedBox(height: 4), Text(label, textAlign: TextAlign.center, style: Theme.of(context).textTheme.labelLarge)],
       ]),
     );
   }
@@ -217,7 +378,7 @@ class DrapePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 48),
       child: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxWidth),
@@ -226,4 +387,11 @@ class DrapePage extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A "forward" arrow that points the reading direction (right in English, left in Arabic).
+IconData forwardIcon(BuildContext context, {bool chevron = false}) {
+  final rtl = Directionality.of(context) == TextDirection.rtl;
+  if (chevron) return rtl ? Icons.chevron_left_rounded : Icons.chevron_right_rounded;
+  return rtl ? Icons.arrow_back_rounded : Icons.arrow_forward_rounded;
 }

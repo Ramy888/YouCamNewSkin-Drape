@@ -133,6 +133,22 @@ class S {
   String get deleted => _('Your photos and results are deleted.', 'تم حذف صورك ونتائجك.');
   String get startOver => _('Start over', 'ابدئي من جديد');
 
+  // layout
+  String stepOf(int n) => _('Step $n of 4', 'الخطوة ${'٠١٢٣٤'[n]} من ٤');
+  String get stepShop => _('Shop', 'تسوّقي');
+  String get stepCompare => _('Compare', 'قارني');
+  String get landingEyebrow => _('Colour-matched try-on', 'تجربة ملابس على ألوانك');
+  String get how1Title => _('Read your colours', 'نقرأ ألوانك');
+  String get how1Body => _('One face photo, read by YouCam Facial Color Tones.', 'صورة واحدة لوجهك تقرأها YouCam Facial Color Tones.');
+  String get how2Title => _('See both colours on you', 'شوفي اللونين عليكي');
+  String get how2Body => _('The colour that fights you beside the one that lifts you.', 'اللون اللي يعاكسك جنب اللون اللي يبرزك.');
+  String get how3Title => _('Complete the look', 'كمّلي الإطلالة');
+  String get how3Body => _('Matching lip shade and metal, then straight to the cart.', 'لون شفايف ومعدن متناسقين، وبعدها على السلة على طول.');
+  String get poweredBy => _('Try-on powered by YouCam API', 'التجربة بتقنية YouCam API');
+  String get compareLead => _('The same piece on you in two colours. Look at your face, not the fabric.', 'نفس القطعة عليكي بلونين. بصّي على وشك، مش على القماش.');
+  String get lookLead => _('Outfit, lip shade and metal chosen from one reading.', 'الطقم ولون الشفايف والمعدن، كلهم من قراءة واحدة.');
+  String get yourPick => _('Your pick', 'اختيارك');
+
   // generic
   String get somethingWrong => _('Something went wrong.', 'حدث خطأ ما.');
   String get sampleBadge => _('Sample person', 'الشخص النموذجي');

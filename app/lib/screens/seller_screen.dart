@@ -6,6 +6,7 @@ import '../api.dart';
 import '../imaging.dart';
 import '../platform/platform.dart';
 import '../theme.dart';
+import '../widgets/common.dart';
 
 const _keyStore = 'drape.sellerKey';
 const _categories = ['upper_body', 'lower_body', 'full_body', 'outer'];
@@ -90,95 +91,238 @@ class _SellerScreenState extends State<SellerScreen> {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return Scaffold(
+      backgroundColor: Tone.paper,
       appBar: AppBar(
-        title: Text('Drape · Seller console', style: t.titleMedium),
-        actions: [if (_signedIn) TextButton(onPressed: _signOut, child: const Text('Sign out'))],
+        automaticallyImplyLeading: false,
+        toolbarHeight: 64,
+        backgroundColor: Tone.ink,
+        foregroundColor: Colors.white,
+        title: const BrandMark(suffix: 'Seller console', onDark: true),
+        actions: [
+          if (_signedIn) ...[
+            if (_busy) const Padding(padding: EdgeInsets.all(20), child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))),
+            IconButton(tooltip: 'Refresh', onPressed: _busy ? null : _refresh, icon: const Icon(Icons.refresh_rounded)),
+            TextButton.icon(
+              style: TextButton.styleFrom(foregroundColor: Colors.white),
+              onPressed: _signOut,
+              icon: const Icon(Icons.logout_rounded, size: 18),
+              label: const Text('Sign out'),
+            ),
+            const SizedBox(width: 12),
+          ],
+        ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          if (_error != null) _ErrorStrip(error: _error!),
-          if (_status != null) Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(_status!, style: t.bodyLarge?.copyWith(color: Tone.yours))),
-          if (!_signedIn) _signInForm(t) else _console(t),
-        ]),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 48),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              if (_error != null) _ErrorStrip(error: _error!),
+              if (_status != null)
+                Padding(padding: const EdgeInsets.only(bottom: 16), child: Notice(text: _status!)),
+              if (!_signedIn) _signInForm(t) else _console(t),
+            ]),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _signInForm(TextTheme t) => ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 440),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Sign in', style: t.headlineSmall),
-          const SizedBox(height: 8),
-          Text('Use the secret seller key you were issued. It stays in this browser tab only.', style: t.bodyMedium),
-          const SizedBox(height: 12),
-          TextField(controller: _key, obscureText: true, decoration: const InputDecoration(labelText: 'Secret key'), onSubmitted: (_) => _signIn()),
-          const SizedBox(height: 12),
-          FilledButton(onPressed: _busy ? null : _signIn, child: const Text('Sign in')),
-        ]),
+  Widget _signInForm(TextTheme t) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 40),
+            child: DrapeCard(
+              padding: const EdgeInsets.all(28),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                const Align(alignment: AlignmentDirectional.centerStart, child: BrandMark()),
+                const SizedBox(height: 24),
+                Text('Sign in to your store', style: t.headlineSmall),
+                const SizedBox(height: 8),
+                Text('Use the secret seller key you were issued. It stays in this browser only.', style: t.bodyMedium),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _key,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Secret key', prefixIcon: Icon(Icons.key_rounded)),
+                  onSubmitted: (_) => _signIn(),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(onPressed: _busy ? null : _signIn, child: const Text('Sign in')),
+              ]),
+            ),
+          ),
+        ),
       );
 
   Widget _console(TextTheme t) {
     final l = _ledger!;
+    num n(String k) => (l[k] as num?) ?? 0;
+    final budget = n('budget');
+    final used = n('used');
+    final stuck = ((l['stuckEntries'] as List?) ?? const []).cast<Map>();
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Wrap(spacing: 24, runSpacing: 8, children: [
-        for (final (k, label) in [('budget', 'Live budget'), ('used', 'Units used'), ('remaining', 'Remaining'), ('usedToday', 'Used today'), ('stuck', 'Stuck (to reconcile)')])
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(label, style: t.labelMedium),
-            Text('${l[k] ?? 0}', style: t.titleMedium?.copyWith(fontFeatures: const [FontFeature.tabularFigures()])),
-          ]),
+      Row(children: [
+        Expanded(child: Text('Overview', style: t.headlineSmall)),
+        Tag(
+          text: budget > 0 ? 'Live try-on on' : 'Demo mode',
+          icon: budget > 0 ? Icons.circle : Icons.circle_outlined,
+          color: budget > 0 ? Tone.yours : Tone.brass,
+          bg: budget > 0 ? Tone.yoursSoft : const Color(0xFFF4ECDC),
+        ),
       ]),
-      for (final e in ((l['stuckEntries'] as List?) ?? const []).cast<Map>())
-        Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 12, runSpacing: 6, children: [
-            Text('${e['jobType']} · ${e['units']} units · ${e['id']}', style: t.bodyMedium),
-            Text('Check this task in the YouCam console, then:', style: t.bodySmall),
-            OutlinedButton(onPressed: _busy ? null : () => _reconcile('${e['id']}', true), child: const Text('It was charged')),
-            OutlinedButton(onPressed: _busy ? null : () => _reconcile('${e['id']}', false), child: const Text('Not charged')),
+      const SizedBox(height: 16),
+      LayoutBuilder(builder: (context, c) {
+        final tiles = [
+          _Kpi(label: 'Live budget', value: '$budget', hint: 'YouCam units'),
+          _Kpi(label: 'Used', value: '$used', hint: budget > 0 ? '${(used / budget * 100).round()}% of budget' : null, progress: budget > 0 ? (used / budget).clamp(0, 1).toDouble() : null),
+          _Kpi(label: 'Remaining', value: '${n('remaining')}'),
+          _Kpi(label: 'Used today', value: '${n('usedToday')}'),
+          _Kpi(label: 'To reconcile', value: '${n('stuck')}', warn: n('stuck') > 0),
+        ];
+        final perRow = c.maxWidth > 900 ? 5 : (c.maxWidth > 560 ? 3 : 2);
+        final w = (c.maxWidth - 12 * (perRow - 1)) / perRow;
+        return Wrap(spacing: 12, runSpacing: 12, children: [for (final k in tiles) SizedBox(width: w, height: 124, child: k)]);
+      }),
+      if (stuck.isNotEmpty) ...[
+        const SizedBox(height: 16),
+        DrapeCard(
+          color: Tone.avoidSoft,
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              const Icon(Icons.warning_amber_rounded, color: Tone.avoid),
+              const SizedBox(width: 8),
+              Text('Tasks to reconcile', style: t.titleMedium),
+            ]),
+            const SizedBox(height: 4),
+            Text('These timed out. Check each task in the YouCam console, then record what happened.', style: t.bodyMedium),
+            for (final e in stuck)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 12, runSpacing: 8, children: [
+                  Text('${e['jobType']} · ${e['units']} units', style: t.titleMedium?.copyWith(fontSize: 16)),
+                  Text('${e['id']}', style: t.bodySmall),
+                  OutlinedButton(onPressed: _busy ? null : () => _reconcile('${e['id']}', true), child: const Text('It was charged')),
+                  OutlinedButton(onPressed: _busy ? null : () => _reconcile('${e['id']}', false), child: const Text('Not charged')),
+                ]),
+              ),
           ]),
         ),
+      ],
+      const SizedBox(height: 32),
+      Text('Catalogue', style: t.headlineSmall),
       const SizedBox(height: 16),
-      const Divider(),
       LayoutBuilder(builder: (context, c) {
         final list = _productList(t);
-        final editor = _ProductEditor(
-          key: ValueKey(_selected?.id ?? 'new'),
-          product: _selected,
-          busy: _busy,
-          onSave: (json) => _act(() async {
-            final p = await widget.api.upsertProduct(json);
-            _products = await widget.api.catalog(widget.publishableKey);
-            _selected = p;
-          }, done: 'Saved ${json['id']}.'),
-          onUpload: (pid, cid) => _act(() async {
-            final raw = await Platform.pickImage();
-            if (raw == null) return;
-            final jpeg = prepareJpeg(raw);
-            if (jpeg == null) throw ApiError('DRAPE_IMAGE_INVALID', 'That file isn’t a readable image.', 'Upload a JPEG or PNG product photo.');
-            _selected = await widget.api.uploadColorwayImage(pid, cid, jpeg);
-            _products = await widget.api.catalog(widget.publishableKey);
-          }, done: 'Photo uploaded for $cid.'),
-          api: widget.api,
+        final editor = DrapeCard(
+          padding: const EdgeInsets.all(24),
+          child: _ProductEditor(
+            key: ValueKey(_selected?.id ?? 'new'),
+            product: _selected,
+            busy: _busy,
+            onSave: (json) => _act(() async {
+              final p = await widget.api.upsertProduct(json);
+              _products = await widget.api.catalog(widget.publishableKey);
+              _selected = p;
+            }, done: 'Saved ${json['id']}.'),
+            onUpload: (pid, cid) => _act(() async {
+              final raw = await Platform.pickImage();
+              if (raw == null) return;
+              final jpeg = prepareJpeg(raw);
+              if (jpeg == null) throw ApiError('DRAPE_IMAGE_INVALID', 'That file isn’t a readable image.', 'Upload a JPEG or PNG product photo.');
+              _selected = await widget.api.uploadColorwayImage(pid, cid, jpeg);
+              _products = await widget.api.catalog(widget.publishableKey);
+            }, done: 'Photo uploaded for $cid.'),
+            api: widget.api,
+          ),
         );
-        return c.maxWidth > 760
-            ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [SizedBox(width: 260, child: list), const VerticalDivider(), Expanded(child: editor)])
-            : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [list, const Divider(), editor]);
+        return c.maxWidth > 860
+            ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [SizedBox(width: 320, child: list), const SizedBox(width: 16), Expanded(child: editor)])
+            : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [list, const SizedBox(height: 16), editor]);
       }),
     ]);
   }
 
-  Widget _productList(TextTheme t) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text('Products', style: t.titleMedium)),
-        for (final p in _products)
-          ListTile(
-            selected: _selected?.id == p.id,
-            title: Text(p.name),
-            subtitle: Text('${p.id} · ${p.category} · ${p.colorways.length} colourways'),
-            onTap: () => setState(() => _selected = p),
+  Widget _productList(TextTheme t) => DrapeCard(
+        padding: const EdgeInsets.all(8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+            child: Row(children: [
+              Expanded(child: Text('Products', style: t.titleMedium)),
+              Text('${_products.length}', style: t.labelMedium),
+            ]),
           ),
-        TextButton.icon(onPressed: () => setState(() => _selected = null), icon: const Icon(Icons.add), label: const Text('New product')),
-      ]);
+          for (final p in _products)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: ListTile(
+                selected: _selected?.id == p.id,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    width: 40,
+                    height: 50,
+                    color: Tone.paperDeep,
+                    child: p.colorways.isEmpty || p.colorways.first.image.isEmpty
+                        ? const Icon(Icons.checkroom_outlined, color: Tone.inkSoft)
+                        : Image.network(widget.api.abs(p.colorways.first.image), fit: BoxFit.contain, color: Tone.paperDeep, colorBlendMode: BlendMode.multiply, errorBuilder: (_, _, _) => const SizedBox()),
+                  ),
+                ),
+                title: Text(p.name, style: t.titleMedium?.copyWith(fontSize: 16)),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Row(children: [
+                    for (final cw in p.colorways.take(6))
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(end: 4),
+                        child: Container(width: 14, height: 14, decoration: BoxDecoration(color: hexColor(cw.hex), shape: BoxShape.circle, border: Border.all(color: Colors.black12))),
+                      ),
+                    const SizedBox(width: 6),
+                    Flexible(child: Text(p.category, style: t.bodySmall, overflow: TextOverflow.ellipsis)),
+                  ]),
+                ),
+                onTap: () => setState(() => _selected = p),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: OutlinedButton.icon(onPressed: () => setState(() => _selected = null), icon: const Icon(Icons.add_rounded), label: const Text('New product')),
+          ),
+        ]),
+      );
+}
+
+class _Kpi extends StatelessWidget {
+  const _Kpi({required this.label, required this.value, this.hint, this.progress, this.warn = false});
+  final String label;
+  final String value;
+  final String? hint;
+  final double? progress;
+  final bool warn;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    return DrapeCard(
+      padding: const EdgeInsets.all(16),
+      color: warn ? Tone.avoidSoft : Tone.surface,
+      expand: true,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label.toUpperCase(), style: t.labelMedium?.copyWith(fontSize: 12)),
+        const SizedBox(height: 6),
+        Text(value, style: t.headlineSmall?.copyWith(fontFamily: 'Plex Arabic', fontWeight: FontWeight.w600, color: warn ? Tone.avoid : Tone.ink, fontFeatures: const [FontFeature.tabularFigures()])),
+        if (progress != null) ...[
+          const SizedBox(height: 8),
+          ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: progress, minHeight: 6)),
+        ],
+        if (hint != null) ...[const SizedBox(height: 6), Text(hint!, style: t.bodySmall)],
+      ]),
+    );
+  }
 }
 
 class _ErrorStrip extends StatelessWidget {
@@ -189,9 +333,9 @@ class _ErrorStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: const BoxDecoration(color: Tone.paperDeep, border: BorderDirectional(start: BorderSide(color: Tone.avoid, width: 3))),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Tone.avoidSoft, borderRadius: BorderRadius.circular(12), border: Border.all(color: Tone.avoid.withValues(alpha: 0.25))),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(error.message, style: t.bodyLarge),
         Text(error.fix, style: t.bodyMedium),
@@ -257,67 +401,94 @@ class _ProductEditorState extends State<_ProductEditor> {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     final editing = widget.product != null;
-    return Padding(
-      padding: const EdgeInsetsDirectional.only(start: 12, top: 8),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text(editing ? 'Edit ${widget.product!.name}' : 'New product', style: t.titleMedium),
-        const SizedBox(height: 12),
-        Wrap(spacing: 12, runSpacing: 12, children: [
-          SizedBox(width: 200, child: TextField(controller: _id, enabled: !editing, decoration: const InputDecoration(labelText: 'Product id (e.g. abaya-classic)'))),
-          SizedBox(width: 260, child: TextField(controller: _name, decoration: const InputDecoration(labelText: 'Name'))),
-          SizedBox(width: 120, child: TextField(controller: _price, decoration: const InputDecoration(labelText: 'Price'))),
-          SizedBox(
-            width: 600,
-            child: TextField(
-              controller: _links,
-              minLines: 2,
-              maxLines: 5,
-              decoration: const InputDecoration(
-                labelText: 'Where you sell it (one product page link per line)',
-                helperText: 'Shoppers using the Drape extension on these pages land straight on this product.',
-              ),
-            ),
+    Widget section(String title, String? hint) => Padding(
+          padding: const EdgeInsets.only(top: 24, bottom: 12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title, style: t.titleMedium),
+            if (hint != null) Text(hint, style: t.bodySmall),
+          ]),
+        );
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Row(children: [
+        Expanded(child: Text(editing ? widget.product!.name : 'New product', style: t.titleLarge)),
+        if (editing) Tag(text: widget.product!.id, color: Tone.inkSoft, bg: Tone.paperDeep),
+      ]),
+      section('Details', null),
+      Wrap(spacing: 12, runSpacing: 12, children: [
+        SizedBox(width: 220, child: TextField(controller: _id, enabled: !editing, decoration: const InputDecoration(labelText: 'Product id', hintText: 'abaya-classic'))),
+        SizedBox(width: 280, child: TextField(controller: _name, decoration: const InputDecoration(labelText: 'Name'))),
+        SizedBox(width: 130, child: TextField(controller: _price, decoration: const InputDecoration(labelText: 'Price'))),
+        SizedBox(
+          width: 200,
+          child: DropdownButtonFormField<String>(
+            initialValue: _category,
+            decoration: const InputDecoration(labelText: 'Garment category'),
+            items: [for (final c in _categories) DropdownMenuItem(value: c, child: Text(c))],
+            onChanged: (v) => setState(() => _category = v ?? _category),
           ),
-          SizedBox(
-            width: 180,
-            child: DropdownButtonFormField<String>(
-              initialValue: _category,
-              decoration: const InputDecoration(labelText: 'Garment category'),
-              items: [for (final c in _categories) DropdownMenuItem(value: c, child: Text(c))],
-              onChanged: (v) => setState(() => _category = v ?? _category),
-            ),
-          ),
-        ]),
-        const SizedBox(height: 16),
-        Text('Colourways', style: t.titleMedium),
-        const SizedBox(height: 4),
-        Text('One clean, front-facing photo per colour on a plain background.', style: t.bodyMedium),
-        const SizedBox(height: 8),
-        for (final r in _rows)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Wrap(spacing: 10, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
-              SizedBox(width: 120, child: TextField(controller: r.id, decoration: const InputDecoration(labelText: 'Id'))),
-              SizedBox(width: 150, child: TextField(controller: r.name, decoration: const InputDecoration(labelText: 'Name'))),
-              SizedBox(width: 110, child: TextField(controller: r.hex, decoration: const InputDecoration(labelText: '#rrggbb'))),
-              if (RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(r.hex.text))
-                Container(width: 28, height: 28, decoration: BoxDecoration(color: hexColor(r.hex.text), shape: BoxShape.circle, border: Border.all(color: Tone.line))),
-              if (r.image.isNotEmpty) SizedBox(width: 48, height: 64, child: Image.network(widget.api.abs(r.image), fit: BoxFit.contain, errorBuilder: (_, _, _) => const SizedBox())),
-              if (editing)
-                OutlinedButton(
-                  onPressed: widget.busy || r.id.text.isEmpty ? null : () => widget.onUpload(widget.product!.id, r.id.text.trim()),
-                  child: Text(r.image.isEmpty ? 'Upload photo' : 'Replace photo'),
-                ),
-            ]),
-          ),
-        Align(alignment: AlignmentDirectional.centerStart, child: TextButton.icon(onPressed: _addRow, icon: const Icon(Icons.add), label: const Text('Add colourway'))),
-        if (!editing) Text('Save the product first, then upload a photo for each colourway.', style: t.bodyMedium),
-        const SizedBox(height: 12),
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: FilledButton(onPressed: widget.busy ? null : () => widget.onSave(_json()), child: Text(editing ? 'Save changes' : 'Create product')),
         ),
       ]),
-    );
+      section('Where you sell it', 'Shoppers using the Drape extension on these pages land straight on this product.'),
+      TextField(
+        controller: _links,
+        minLines: 2,
+        maxLines: 5,
+        decoration: const InputDecoration(labelText: 'Product page links, one per line'),
+      ),
+      section('Colourways', 'One clean, front-facing photo per colour on a plain background.'),
+      for (final r in _rows)
+        Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: Tone.paper, borderRadius: BorderRadius.circular(12), border: Border.all(color: Tone.line)),
+          child: Wrap(spacing: 12, runSpacing: 10, crossAxisAlignment: WrapCrossAlignment.center, children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                width: 52,
+                height: 66,
+                color: Tone.surface,
+                child: r.image.isEmpty
+                    ? const Icon(Icons.image_outlined, color: Tone.inkSoft)
+                    : Image.network(widget.api.abs(r.image), fit: BoxFit.contain, errorBuilder: (_, _, _) => const SizedBox()),
+              ),
+            ),
+            SizedBox(width: 130, child: TextField(controller: r.id, decoration: const InputDecoration(labelText: 'Id'))),
+            SizedBox(width: 160, child: TextField(controller: r.name, decoration: const InputDecoration(labelText: 'Name'))),
+            SizedBox(
+              width: 140,
+              child: TextField(
+                controller: r.hex,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  labelText: 'Colour',
+                  hintText: '#rrggbb',
+                  prefixIcon: RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(r.hex.text)
+                      ? Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Container(width: 18, height: 18, decoration: BoxDecoration(color: hexColor(r.hex.text), shape: BoxShape.circle, border: Border.all(color: Colors.black12))),
+                        )
+                      : null,
+                ),
+              ),
+            ),
+            if (editing)
+              OutlinedButton.icon(
+                onPressed: widget.busy || r.id.text.isEmpty ? null : () => widget.onUpload(widget.product!.id, r.id.text.trim()),
+                icon: const Icon(Icons.upload_rounded, size: 18),
+                label: Text(r.image.isEmpty ? 'Upload photo' : 'Replace photo'),
+              ),
+          ]),
+        ),
+      Align(alignment: AlignmentDirectional.centerStart, child: TextButton.icon(onPressed: _addRow, icon: const Icon(Icons.add_rounded), label: const Text('Add colourway'))),
+      if (!editing) Text('Save the product first, then upload a photo for each colourway.', style: t.bodySmall),
+      const SizedBox(height: 20),
+      const Divider(),
+      const SizedBox(height: 16),
+      Align(
+        alignment: AlignmentDirectional.centerEnd,
+        child: FilledButton(onPressed: widget.busy ? null : () => widget.onSave(_json()), child: Text(editing ? 'Save changes' : 'Create product')),
+      ),
+    ]);
   }
 }

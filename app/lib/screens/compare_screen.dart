@@ -16,16 +16,14 @@ class CompareScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = app.s;
-    final t = Theme.of(context).textTheme;
     final p = app.product;
     final pair = app.comparePair;
     if (p == null || pair == null) return const SizedBox();
     final pickJob = app.tryons[pair.pick.id];
     final offJob = pair.off == null ? null : app.tryons[pair.off!.id];
     final note = [pickJob, offJob].whereType<Job>().where((j) => j.sample && j.note != null).map((j) => j.note!).firstOrNull;
-    return DrapePage(maxWidth: 1000, children: [
-      Text(s.compareTitle, style: t.headlineSmall),
-      Text(p.name, style: t.bodyLarge),
+    return DrapePage(maxWidth: 904, children: [
+      StepHeader(eyebrow: s.stepOf(3), title: s.compareTitle, lead: '${p.name} · ${s.compareLead}'),
       if (note != null) ...[const SizedBox(height: 10), Notice(text: app.session?.persona == true ? note : s.sampleResult)],
       if (pair.off == null) ...[const SizedBox(height: 10), Notice(text: s.noOffPalette)],
       const SizedBox(height: 16),
@@ -38,8 +36,14 @@ class CompareScreen extends StatelessWidget {
         busyText: app.busy,
         onRetry: (c) => app.renderTryon(c),
       ),
-      const SizedBox(height: 24),
-      FilledButton(onPressed: pickJob?.ok == true ? () => app.completeLook() : null, child: Text(s.completeLook)),
+      const SizedBox(height: 28),
+      Center(
+        child: FilledButton.icon(
+          onPressed: pickJob?.ok == true ? () => app.completeLook() : null,
+          icon: Icon(forwardIcon(context)),
+          label: Text(s.completeLook),
+        ),
+      ),
     ]);
   }
 }
@@ -95,7 +99,6 @@ class _Panel extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     final job = side.job;
-    final color = good ? Tone.yours : Tone.avoid;
     Widget body;
     if (job == null) {
       body = Center(child: Padding(padding: const EdgeInsets.all(12), child: Progress(text: s.dressing(side.colorway.name))));
@@ -113,15 +116,26 @@ class _Panel extends StatelessWidget {
         ),
       );
     }
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      AspectRatio(aspectRatio: 3 / 4, child: ColoredBox(color: Tone.paperDeep, child: body)),
-      const SizedBox(height: 10),
-      Row(children: [
-        Container(width: 18, height: 18, decoration: BoxDecoration(color: hexColor(side.colorway.hex), shape: BoxShape.circle, border: Border.all(color: Tone.line))),
-        const SizedBox(width: 8),
-        Expanded(child: Text(side.colorway.name, style: t.titleMedium)),
+    return DrapeCard(
+      padding: const EdgeInsets.all(10),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: AspectRatio(aspectRatio: 3 / 4, child: ColoredBox(color: Tone.paperDeep, child: body)),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(6, 12, 6, 6),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(width: 18, height: 18, decoration: BoxDecoration(color: hexColor(side.colorway.hex), shape: BoxShape.circle, border: Border.all(color: Colors.black.withValues(alpha: 0.12)))),
+              const SizedBox(width: 8),
+              Expanded(child: Text(side.colorway.name, style: t.titleMedium)),
+            ]),
+            const SizedBox(height: 8),
+            VerdictLabel(verdict: good ? Verdict.yours : Verdict.avoid, s: s, text: verdictText),
+          ]),
+        ),
       ]),
-      Text(verdictText, style: t.labelLarge?.copyWith(color: color)),
-    ]);
+    );
   }
 }

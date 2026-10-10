@@ -133,7 +133,8 @@ Waiting for the live switch (needs Ramy's approval, spends units):
 - [x] `YOUCAM_API_KEY` secret set; live with budget 400 via `npm run deploy:live` (config file stays replay)
 
 Open:
-- [ ] Arabic copy review by a native speaker; DESIGN.md (/design-consultation)
+- [x] DESIGN.md (atelier system for Drape, separate demo-store identity)
+- [ ] Arabic copy review by a native speaker
 - [ ] Repo public (licence in place) or shared with contact_event@PerfectCorp.com; demo video
 
 Test plan: `~/.gstack/projects/Developer/ramymagdy-no-branch-eng-review-test-plan-20261010-200636.md`.

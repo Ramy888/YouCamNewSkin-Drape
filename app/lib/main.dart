@@ -14,6 +14,7 @@ import 'screens/shop_screen.dart';
 import 'screens/start_screens.dart';
 import 'state.dart';
 import 'theme.dart';
+import 'widgets/common.dart';
 
 void main() => runApp(const DrapeApp());
 
@@ -79,20 +80,56 @@ class _BuyerShellState extends State<BuyerShell> {
       FlowStep.compare => CompareScreen(app: app),
       FlowStep.look => LookScreen(app: app),
     };
+    final stage = switch (app.step) { FlowStep.reveal => 1, FlowStep.shop => 2, FlowStep.compare => 3, FlowStep.look => 4, _ => 0 };
     return Directionality(
       textDirection: s.dir,
       child: Scaffold(
         appBar: AppBar(
+          toolbarHeight: 64,
           leading: app.step == FlowStep.start ? null : IconButton(tooltip: s.back, icon: const BackButtonIcon(), onPressed: app.back),
-          title: Text(s.brand, style: Theme.of(context).textTheme.headlineSmall),
+          titleSpacing: app.step == FlowStep.start ? 20 : 0,
+          title: const BrandMark(),
           actions: [
             if (app.session != null && !app.session!.persona && app.step != FlowStep.start)
-              TextButton(onPressed: app.deletePhotos, child: Text(s.deletePhotos)),
-            TextButton(onPressed: app.toggleLang, child: Text(s.langToggle)),
-            const SizedBox(width: 8),
+              TextButton.icon(onPressed: app.deletePhotos, icon: const Icon(Icons.delete_outline_rounded, size: 18), label: Text(s.deletePhotos)),
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(minimumSize: const Size(48, 40), padding: const EdgeInsets.symmetric(horizontal: 14)),
+              onPressed: app.toggleLang,
+              child: Text(s.langToggle),
+            ),
+            const SizedBox(width: 16),
           ],
+          bottom: PreferredSize(preferredSize: const Size.fromHeight(4), child: _StageBar(stage: stage)),
         ),
         body: SafeArea(child: AnimatedSwitcher(duration: const Duration(milliseconds: 220), child: KeyedSubtree(key: ValueKey(app.step), child: body))),
+      ),
+    );
+  }
+}
+
+/// Four thin segments under the app bar: colours, shop, compare, look.
+class _StageBar extends StatelessWidget {
+  const _StageBar({required this.stage});
+  final int stage;
+
+  @override
+  Widget build(BuildContext context) {
+    if (stage == 0) return const Divider(height: 4, thickness: 1);
+    return ExcludeSemantics(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(children: [
+          for (var i = 1; i <= 4; i++) ...[
+            if (i > 1) const SizedBox(width: 6),
+            Expanded(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                height: 4,
+                decoration: BoxDecoration(color: i <= stage ? Tone.mulberry : Tone.line, borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+          ],
+        ]),
       ),
     );
   }
