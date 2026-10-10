@@ -48,6 +48,14 @@ class AppState extends ChangeNotifier {
   }
 
   FlowStep step = FlowStep.start;
+
+  /// null until /health answers. When false, "Use my photo" is switched off so nobody uploads a photo
+  /// and then sees the sample person's result.
+  bool? live;
+  Future<void> checkLive() async {
+    live = await api.liveAvailable();
+    notifyListeners();
+  }
   Session? session;
   String? busy; // progress copy shown while waiting
   String? error; // buyer-facing message (never a raw error)

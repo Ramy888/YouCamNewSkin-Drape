@@ -25,8 +25,9 @@ class LandingScreen extends StatelessWidget {
       const SizedBox(height: 6),
       Text(s.sampleExplain, style: t.bodyMedium),
       const SizedBox(height: 18),
-      OutlinedButton(onPressed: app.busy == null ? () => app.start(persona: false) : null, child: Text(s.usePhoto)),
+      OutlinedButton(onPressed: app.busy == null && app.live == true ? () => app.start(persona: false) : null, child: Text(s.usePhoto)),
       const SizedBox(height: 10),
+      if (app.live == false) ...[Notice(text: s.liveOff), const SizedBox(height: 10)],
       Text(s.privacy, style: t.bodyMedium),
     ]);
   }

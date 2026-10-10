@@ -58,6 +58,7 @@ class _BuyerShellState extends State<BuyerShell> {
     super.initState();
     app.addListener(() => setState(() {}));
     app.restore();
+    app.checkLive();
   }
 
   @override

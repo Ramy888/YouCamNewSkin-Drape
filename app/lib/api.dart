@@ -226,6 +226,16 @@ class DrapeApi {
   /// Image URLs from the API are same-origin paths; make them absolute for Image.network.
   String abs(String path) => path.startsWith('http') ? path : _u(path).toString();
 
+  /// Whether live try-on with the buyer's own photo is switched on (false = demo mode, sample person only).
+  Future<bool> liveAvailable() async {
+    try {
+      final r = await _client.get(_u('/health'));
+      return (jsonDecode(r.body) as Map)['mode'] == 'live';
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<Session> createSession({required String key, String? storeOrigin, bool persona = false, String? judgeCode}) async {
     final j = await _send(_client.post(_u('/v1/sessions'),
         headers: _headers(), body: jsonEncode({'key': key, 'storeOrigin': ?storeOrigin, 'persona': persona, 'judgeCode': ?judgeCode})));

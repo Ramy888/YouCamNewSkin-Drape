@@ -33,6 +33,8 @@ class S {
   String get bodyTitle => _('A full-length photo', 'صورة كاملة من الرأس للقدم');
   String get bodyHint => _('Stand facing the camera, one person only, your whole body in the frame.', 'قفي مواجهة الكاميرا، شخص واحد فقط، وجسمك كله داخل الصورة.');
   String get takePhoto => _('Take or choose a photo', 'التقطي أو اختاري صورة');
+  String get liveOff => _('Trying on with your own photo is switched off in this demo, so we show the full flow with our sample person.', 'التجربة بصورتك متوقفة في النسخة التجريبية، فبنعرض لك التجربة كاملة مع الشخص النموذجي.');
+  String get sampleResult => _('This is the sample person, not you: demo mode doesn\'t use your photo.', 'دي صورة الشخص النموذجي مش صورتك: النسخة التجريبية ما بتستخدمش صورتك.');
   String get privacy => _('Your photos are deleted after 24 hours. You can delete them now at any time.', 'صورك تُحذف بعد ٢٤ ساعة، وتقدرين تحذفينها الآن في أي وقت.');
   String get tryWithout => _('Try without your photo', 'جرّبي من غير صورتك');
   String get uploading => _('Preparing your photo…', 'جارٍ تجهيز صورتك…');

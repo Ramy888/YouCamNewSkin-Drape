@@ -19,12 +19,14 @@ class LookScreen extends StatelessWidget {
     final pair = app.comparePair;
     if (ses == null || palette == null || pair == null) return const SizedBox();
     final outfit = app.tryons[pair.pick.id]?.image;
+    final showsSample = app.tryons[pair.pick.id]?.sample == true;
     final makeup = app.makeupJob;
     final makeupImage = makeup?.ok == true ? makeup!.image : null;
     final product = app.product!;
     return DrapePage(children: [
       Text(s.lookCard, style: t.headlineSmall),
       const SizedBox(height: 16),
+      if (showsSample && app.session?.persona != true) ...[Notice(text: s.sampleResult), const SizedBox(height: 16)],
       Wrap(spacing: 20, runSpacing: 20, crossAxisAlignment: WrapCrossAlignment.start, children: [
         if (outfit != null)
           SizedBox(width: 260, child: AspectRatio(aspectRatio: 3 / 4, child: Image.network(app.api.abs(outfit), fit: BoxFit.cover, alignment: Alignment.topCenter, semanticLabel: '${product.name}, ${pair.pick.name}'))),

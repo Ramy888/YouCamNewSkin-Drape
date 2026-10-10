@@ -26,7 +26,7 @@ class CompareScreen extends StatelessWidget {
     return DrapePage(maxWidth: 1000, children: [
       Text(s.compareTitle, style: t.headlineSmall),
       Text(p.name, style: t.bodyLarge),
-      if (note != null) ...[const SizedBox(height: 10), Notice(text: note)],
+      if (note != null) ...[const SizedBox(height: 10), Notice(text: app.session?.persona == true ? note : s.sampleResult)],
       if (pair.off == null) ...[const SizedBox(height: 10), Notice(text: s.noOffPalette)],
       const SizedBox(height: 16),
       ComparePairView(

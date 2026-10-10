@@ -41,7 +41,7 @@ class RevealScreen extends StatelessWidget {
       ]),
       const SizedBox(height: 4),
       Text('${s.undertone(palette.undertone)} · ${s.contrast(palette.contrast)}', style: t.bodyLarge),
-      if (job?.sample == true && job?.note != null) ...[const SizedBox(height: 10), Notice(text: job!.note!)],
+      if (job?.sample == true && job?.note != null) ...[const SizedBox(height: 10), Notice(text: app.session?.persona == true ? job!.note! : s.sampleResult)],
       const SizedBox(height: 20),
       Wrap(alignment: WrapAlignment.center, spacing: 28, runSpacing: 20, children: [
         DrapedFace(url: face, drapeHex: best.hex, label: '${best.name} · ${s.liftsYou}'),
