@@ -22,6 +22,8 @@ class LookScreen extends StatelessWidget {
     final showsSample = app.tryons[pair.pick.id]?.sample == true;
     final makeup = app.makeupJob;
     final makeupImage = makeup?.ok == true ? makeup!.image : null;
+    final jewelry = app.jewelryJob;
+    final earringImage = jewelry?.ok == true ? jewelry!.image : null;
     final product = app.product!;
     return DrapePage(children: [
       Text(s.lookCard, style: t.headlineSmall),
@@ -38,13 +40,17 @@ class LookScreen extends StatelessWidget {
             if (app.busy != null && makeup == null) Progress(text: app.busy!),
             if (makeupImage != null)
               SizedBox(width: 200, height: 200, child: ClipOval(child: Image.network(app.api.abs(makeupImage), fit: BoxFit.cover, semanticLabel: s.matchingMakeup))),
-            if (makeup != null && makeupImage == null) Notice(text: makeup.errorKind == 'unavailable' ? s.makeupUnavailable : makeup.errorMessage),
+            if (makeup != null && makeupImage == null) Notice(text: makeup.errorKind == 'unavailable' ? s.makeupUnavailable : s.jobError(makeup.errorCode, makeup.errorMessage)),
             const SizedBox(height: 12),
             Text(s.lipShade, style: t.bodyMedium),
             SwatchChip(name: palette.lip.name, hex: palette.lip.hex, size: 30),
             const SizedBox(height: 16),
             Text(s.metalLabel, style: t.bodyMedium),
             Text(s.metal(palette.metal), style: t.titleMedium?.copyWith(color: Tone.brass)),
+            const SizedBox(height: 12),
+            if (earringImage != null)
+              SizedBox(width: 200, height: 200, child: ClipOval(child: Image.network(app.api.abs(earringImage), fit: BoxFit.cover, semanticLabel: s.earringsInMetal))),
+            if (jewelry != null && earringImage == null) Notice(text: jewelry.errorKind == 'unavailable' ? s.earringUnavailable : s.jobError(jewelry.errorCode, jewelry.errorMessage)),
           ]),
         ),
       ]),

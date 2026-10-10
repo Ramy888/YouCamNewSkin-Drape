@@ -113,6 +113,13 @@ export class Ledger {
     return this.sql.exec(`SELECT state FROM ledger WHERE id = ?`, id)[0]?.state as Entry | undefined;
   }
 
+  /** Timed-out tasks that still hold units; each needs a check in the YouCam console, then reconcile. */
+  stuck(): Array<{ id: string; jobType: string; units: number; since: number }> {
+    return this.sql
+      .exec(`SELECT id, job_type, units, updated_at FROM ledger WHERE state = 'stuck' ORDER BY updated_at`)
+      .map((r) => ({ id: String(r.id), jobType: String(r.job_type), units: Number(r.units), since: Number(r.updated_at) }));
+  }
+
   summary() {
     const rows = this.sql.exec(`SELECT state, COALESCE(SUM(units),0) AS u FROM ledger GROUP BY state`);
     const by: Record<string, number> = { reserved: 0, committed: 0, released: 0, stuck: 0 };

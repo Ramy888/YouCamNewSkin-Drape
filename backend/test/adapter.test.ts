@@ -4,7 +4,7 @@ import { join } from "node:path";
 const here = (rel: string) => join(__dirname, rel);
 import { signSession, verifySession } from "../src/auth";
 import { sniff, stripJpegMetadata, validateImage } from "../src/images";
-import { LiveYouCam, mapTaskError, replayTryonPath, resultUrl, YouCamError } from "../src/youcam";
+import { earringAsset, earringPayload, LiveYouCam, mapTaskError, replayTryonPath, resultUrl, YouCamError } from "../src/youcam";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 const uploadInit = () => json({ status: 200, data: { files: [{ file_id: "f1", requests: [{ url: "https://put.example/x", method: "PUT", headers: {} }] }] } });
@@ -114,6 +114,23 @@ describe("replay", () => {
         expect(readFileSync(join(d, f), "utf8"), f).not.toMatch(/https?:\/\//);
       }
     }
+  });
+});
+
+describe("earrings", () => {
+  it("builds the 2D VTO payload with matching source and object names", () => {
+    const p = earringPayload("src1", "ref1") as { ref_file_ids: string[]; source_info: { name: string }; object_infos: Array<{ name: string }> };
+    expect(p.ref_file_ids).toEqual(["ref1"]);
+    expect(p.source_info.name).toBe("src1");
+    expect(p.object_infos[0].name).toBe("ref1");
+  });
+  it("has a catalogue earring image for every palette metal", () => {
+    for (const m of ["gold", "silver", "rose gold"] as const) {
+      expect(() => readFileSync(here(`../public${earringAsset(m)}`))).not.toThrow();
+    }
+  });
+  it("tells the buyer covered ears are fine", () => {
+    expect(mapTaskError("error_face_parsing").userMessage).toMatch(/ears/);
   });
 });
 

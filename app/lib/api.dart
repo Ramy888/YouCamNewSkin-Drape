@@ -142,6 +142,7 @@ class Job {
   bool get sample => result?['sample'] == true;
   String? get note => result?['note'] as String?;
   String? get errorKind => error?['kind'] as String?;
+  String? get errorCode => error?['code'] as String?;
   String get errorMessage => '${error?['message'] ?? 'Something went wrong.'}';
   bool get retryable => error?['retryable'] == true;
 
@@ -292,4 +293,8 @@ class DrapeApi {
   }
 
   Future<Map<String, dynamic>> ledger() => _send(_client.get(_u('/v1/admin/ledger'), headers: _headers(seller: true)));
+
+  /// Settle a timed-out task after checking the YouCam console: charged keeps the units, not_charged frees them.
+  Future<Map<String, dynamic>> reconcile(String id, {required bool charged}) => _send(_client.post(_u('/v1/admin/reconcile'),
+      headers: _headers(seller: true), body: jsonEncode({'id': id, 'outcome': charged ? 'charged' : 'not_charged'})));
 }

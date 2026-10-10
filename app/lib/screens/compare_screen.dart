@@ -106,7 +106,7 @@ class _Panel extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(job.errorKind == 'unavailable' ? s.notRecorded : job.errorMessage, textAlign: TextAlign.center, style: t.bodyMedium),
+            Text(job.errorKind == 'unavailable' ? s.notRecorded : s.jobError(job.errorCode, job.errorMessage), textAlign: TextAlign.center, style: t.bodyMedium),
             if (job.retryable || job.errorKind != 'unavailable')
               TextButton(onPressed: onRetry == null ? null : () => onRetry!(side.colorway), child: Text(s.retry)),
           ]),

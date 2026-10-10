@@ -16,6 +16,8 @@ jobs:
           # Keys are 32+ char tokens; the API key must never be in public/ (the Flutter bundle lives there).
           if grep -rIlE "(YOUCAM_API_KEY|sk_[0-9a-f]{24,}|Bearer [A-Za-z0-9_\-]{30,})" public/; then
             echo "Secret-like string found in public/"; exit 1; fi
+      - name: Live mode end to end against a mock YouCam (no key, no units)
+        run: npm run test:e2e
       - name: Replay mode makes zero calls to YouCam
         run: |
           npx wrangler dev --port 8787 > dev.log 2>&1 &

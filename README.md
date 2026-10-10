@@ -3,7 +3,7 @@
 Drape is a **"Try on with Drape"** button that modest-fashion stores add to their product pages.
 One face photo is read by the **YouCam Facial Color Tones API**. Drape then shows the colourway that fights your colouring
 next to the one that suits it, **on your own body** (YouCam **Clothes VTO**), finishes the look with a matching lip shade
-(YouCam **Makeup VTO**) and jewellery metal, and hands the bundle back to the store's cart. English and Arabic (RTL).
+(YouCam **Makeup VTO**) and earrings in the right metal (YouCam **Earrings VTO**), and hands the bundle back to the store's cart. English and Arabic (RTL).
 
 Built for the YouCam API Skin AI & eCommerce VTO Hackathon (eCommerce VTO track).
 
@@ -28,6 +28,7 @@ see [Live mode](#live-mode).
 | Your colours | AI Facial Color Tones | `skin-tone-analysis` | 20 (once per face, cached 24h) | skin / hair / eye hex → undertone (CIELAB hue angle) + contrast → palette |
 | Compare + try-on | AI Clothes VTO v4 | `cloth-v4` | 2 per render | the chosen product colourway on the buyer's full-body photo (`full_body`, `upper_body`, `outer`) |
 | Complete the look | AI Makeup VTO | `makeup-vto` | 1 | lip colour from the palette on the face photo |
+| Complete the look | AI Earrings VTO (2D) | `2d-vto/earring` | 1 | an earring in the palette metal (gold, silver or rose gold) on the face photo |
 
 Every call goes through the backend (the API key never reaches the browser). Flow per call: `POST /file/<task>` → `PUT` bytes →
 `POST /task/<task>` → poll `GET /task/<task>/<id>` → copy the result into our storage (YouCam deletes results after 24h).
@@ -57,7 +58,8 @@ Requirements: Node 20+, Flutter 3.41+ (only to rebuild the app).
 
 ```bash
 git clone https://github.com/Ramy888/YouCamNewSkin-Drape.git && cd YouCamNewSkin-Drape
-cd backend && npm install && npm test        # 40+ tests: palette, ledger, adapter, images, tokens
+cd backend && npm install && npm test        # unit tests: palette, ledger, adapter, images, tokens
+npm run test:e2e                              # live mode end to end against a mock YouCam (no key, no units)
 npx wrangler dev --port 8787                  # API + app + embed on http://localhost:8787
 # in another terminal: the demo shop on a second origin
 cd stores/noor && npx --prefix ../../backend wrangler dev --port 8788
@@ -97,7 +99,7 @@ The store's origin must be on the allowed list (`ALLOWED_ORIGINS`). Misconfigura
 | POST | `/v1/sessions` | publishable key in body | start a buyer session `{key, storeOrigin, persona?}` → `{token, session}` |
 | GET / DELETE | `/v1/sessions/me` | `Bearer <token>` | session state / delete everything for this session |
 | POST | `/v1/sessions/me/photos?kind=face\|body` | token | upload a photo (raw bytes) |
-| POST | `/v1/sessions/me/jobs` | token | `{type: color_reading \| tryon \| makeup, productId?, colorwayId?}` → job |
+| POST | `/v1/sessions/me/jobs` | token | `{type: color_reading \| tryon \| makeup \| jewelry, productId?, colorwayId?}` → job |
 | GET | `/v1/jobs/:id` | token | job status and result |
 | POST | `/v1/sessions/me/palette` | token | `{override: "warmer" \| "cooler" \| null}` (0 units) |
 | GET | `/v1/admin/products` | `Bearer sk_…` | all products, including drafts and disabled ones |

@@ -4,6 +4,7 @@ Usage (from the repo root):
   python3 docs/derisk/render_persona.py .env tryon:abaya-classic:lavender makeup
 Each `tryon:<productId>:<colorwayId>` costs 2 units (cloth-v4 full_body on backend/public/persona/body.jpg with
 backend/public/catalog/<productId>_<colorwayId>.jpg). `makeup` costs 1 unit (lip from the persona's palette on face.jpg).
+`earring:<gold|silver|rose-gold>` costs 1 unit (2D earring VTO on face.jpg).
 Results go to backend/public/persona/ as images; raw responses are saved with remote URLs replaced by the local file name.
 """
 import json, os, re, sys, time
@@ -74,5 +75,11 @@ for job in jobs:
         run("makeup-vto", "makeup", {"src_file_id": face, "version": "1.0", "effects": [
             {"category": "lip_color", "shape": {"name": "original"}, "style": {"type": "full"},
              "palettes": [{"color": WARM_LIP, "texture": "matte", "colorIntensity": 70}]}]})
+    elif job.startswith("earring:"):
+        metal = job.split(":")[1]
+        face = upload(os.path.join(PUB, "persona", "face.jpg"), "2d-vto/earring")
+        ref = upload(os.path.join(PUB, "catalog", "jewelry", f"earring_{metal}.jpg"), "2d-vto/earring")
+        run("2d-vto/earring", f"earring_{metal}", {"src_file_id": face, "ref_file_ids": [ref], "source_info": {"name": face},
+            "object_infos": [{"name": ref, "parameter": {"earring_need_remove_background": True, "earring_occluded_type": 0}}]})
     else:
         raise SystemExit(f"unknown job {job}")

@@ -63,6 +63,7 @@ class AppState extends ChangeNotifier {
 
   Job? readingJob;
   Job? makeupJob;
+  Job? jewelryJob;
   final Map<String, Job> tryons = {};
   String? productId;
   String? chosenColorwayId;
@@ -93,8 +94,8 @@ class AppState extends ChangeNotifier {
     try {
       return await action();
     } on ApiError catch (e) {
-      error = e.message;
-      errorFix = e.fix;
+      error = s.apiError(e.code, e.message);
+      errorFix = s.rtl ? null : e.fix;
       return null;
     } catch (_) {
       error = s.somethingWrong;
@@ -166,7 +167,7 @@ class AppState extends ChangeNotifier {
   Future<void> readColours() async {
     readingJob = await _run('color_reading', s.reading);
     if (readingJob != null && !readingJob!.ok) {
-      error = readingJob!.errorMessage;
+      error = s.jobError(readingJob!.errorCode, readingJob!.errorMessage);
       notifyListeners();
     }
   }
@@ -224,7 +225,9 @@ class AppState extends ChangeNotifier {
   Future<void> completeLook() async {
     go(FlowStep.look);
     makeupJob = await _run('makeup', s.matchingMakeup);
-    // A failed makeup render is a partial result: the look card still shows the outfit and the lip swatch.
+    jewelryJob = await _run('jewelry', s.earringsInMetal);
+    // A failed makeup or earring render is a partial result: the look card still shows the outfit,
+    // the lip swatch and the metal.
     error = null;
     notifyListeners();
   }
@@ -259,6 +262,7 @@ class AppState extends ChangeNotifier {
     session = null;
     readingJob = null;
     makeupJob = null;
+    jewelryJob = null;
     tryons.clear();
     deleted = true;
     go(FlowStep.start);

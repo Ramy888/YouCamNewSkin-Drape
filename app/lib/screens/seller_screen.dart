@@ -39,6 +39,11 @@ class _SellerScreenState extends State<SellerScreen> {
     }
   }
 
+  Future<void> _reconcile(String id, bool charged) => _act(() async {
+        await widget.api.reconcile(id, charged: charged);
+        _ledger = await widget.api.ledger();
+      }, done: charged ? 'Recorded as charged.' : 'Units released.');
+
   Future<void> _act(Future<void> Function() f, {String? done}) async {
     setState(() {
       _busy = true;
@@ -123,6 +128,16 @@ class _SellerScreenState extends State<SellerScreen> {
             Text('${l[k] ?? 0}', style: t.titleMedium?.copyWith(fontFeatures: const [FontFeature.tabularFigures()])),
           ]),
       ]),
+      for (final e in ((l['stuckEntries'] as List?) ?? const []).cast<Map>())
+        Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 12, runSpacing: 6, children: [
+            Text('${e['jobType']} · ${e['units']} units · ${e['id']}', style: t.bodyMedium),
+            Text('Check this task in the YouCam console, then:', style: t.bodySmall),
+            OutlinedButton(onPressed: _busy ? null : () => _reconcile('${e['id']}', true), child: const Text('It was charged')),
+            OutlinedButton(onPressed: _busy ? null : () => _reconcile('${e['id']}', false), child: const Text('Not charged')),
+          ]),
+        ),
       const SizedBox(height: 16),
       const Divider(),
       LayoutBuilder(builder: (context, c) {

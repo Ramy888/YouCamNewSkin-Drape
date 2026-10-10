@@ -14,6 +14,39 @@ class S {
 
   String _(String en, String ar) => lang == Lang.ar ? ar : en;
 
+  // The server writes buyer messages in English. In Arabic we show our own text for every code we know,
+  // and keep the server's English only for codes we have never seen.
+  static const _apiAr = {
+    'DRAPE_BAD_KEY': 'رابط المتجر غير صحيح. ارجعي لصفحة المنتج وجربي تاني.',
+    'DRAPE_UNAUTHORIZED': 'الجلسة انتهت. ابدئي من صفحة المنتج تاني.',
+    'DRAPE_SESSION_NOT_FOUND': 'الجلسة انتهت. ابدئي من صفحة المنتج تاني.',
+    'DRAPE_DOMAIN_NOT_ALLOWED': 'المتجر ده مش مفعّل مع Drape لسه.',
+    'DRAPE_PRODUCT_NOT_FOUND': 'المنتج ده مش متاح للتجربة حالياً.',
+    'DRAPE_IMAGE_INVALID': 'الملف ده مش صورة. اختاري صورة JPG أو PNG.',
+    'DRAPE_IMAGE_TOO_LARGE': 'الصورة كبيرة جداً. جربي صورة أصغر.',
+    'DRAPE_PHOTO_MISSING': 'محتاجين صورتك الأول.',
+    'DRAPE_BUDGET_EXHAUSTED': 'وصلنا للحد اليومي للتجربة الحية. هنعرض لك الشكل النموذجي.',
+    'DRAPE_INTERNAL': 'حصلت مشكلة عندنا. جربي تاني بعد شوية.',
+  };
+  static const _jobAr = {
+    'error_face_angle_downward': 'ارفعي ذقنك شوية وبصي للكاميرا على طول.',
+    'error_face_angle_upward': 'نزّلي ذقنك شوية وبصي للكاميرا على طول.',
+    'error_face_angle': 'بصي للكاميرا على طول.',
+    'error_no_face': 'مش لاقيين وش في الصورة. قرّبي وبصي للكاميرا.',
+    'error_face_too_small': 'قرّبي عشان وشك يملا الإطار.',
+    'error_multi_person': 'لازم يكون في شخص واحد بس في الصورة.',
+    'error_pose': 'اقفي في مواجهة الكاميرا وإيديكي بعيد شوية عن جسمك.',
+    'error_lighting': 'دوري على نور هادي ومتساوي وجربي تاني.',
+    'error_face_parsing': 'مش شايفين ودانك عشان نحط الحلق. مفيش مشكلة: لون معدنك ظاهر في الإطلالة.',
+    'error_nsfw_content_detected': 'الصورة دي مينفعش نستخدمها. اختاري صورة تانية.',
+    'poll_deadline': 'الموضوع أخد وقت أطول من اللازم. جربي تاني.',
+    'http_429': 'الخدمة مشغولة. جربي تاني بعد دقيقة.',
+    'http_401': 'التجربة الحية متوقفة حالياً. هنعرض لك الشكل النموذجي.',
+  };
+
+  String apiError(String code, String fallback) => lang == Lang.ar ? (_apiAr[code] ?? somethingWrong) : fallback;
+  String jobError(String? code, String fallback) => lang == Lang.ar ? (_jobAr[code] ?? somethingWrong) : fallback;
+
   String get brand => 'Drape';
   String get langToggle => _('العربية', 'English');
   String get back => _('Back', 'رجوع');
@@ -86,6 +119,8 @@ class S {
   String get needBody => _('For the try-on we need one full-length photo.', 'للتجربة نحتاج صورة كاملة واحدة.');
 
   // look
+  String get earringsInMetal => _('Earrings in your metal', 'حلق بلون معدنك');
+  String get earringUnavailable => _('Earring preview isn’t available in demo mode', 'معاينة الحلق غير متاحة في وضع العرض');
   String get makeupUnavailable => _('Makeup preview isn’t available in demo mode', 'معاينة المكياج غير متاحة في وضع العرض');
   String get lipShade => _('Your lip shade', 'لون الشفاه المناسب');
   String get matchingMakeup => _('Matching makeup', 'مكياج متناسق');

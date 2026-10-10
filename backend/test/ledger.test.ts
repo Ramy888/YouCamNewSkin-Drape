@@ -49,6 +49,15 @@ describe("ledger", () => {
     expect(l.used()).toBe(0);
   });
 
+  it("lists stuck reservations until they are reconciled", () => {
+    const l = make(10);
+    l.reserve("a", "tryon", "v1");
+    l.markStuck("a");
+    expect(l.stuck()).toEqual([{ id: "a", jobType: "tryon", units: 2, since: now }]);
+    l.commit("a");
+    expect(l.stuck()).toEqual([]);
+  });
+
   it("only allows legal state moves", () => {
     const l = make(10);
     l.reserve("a", "tryon", "v1");

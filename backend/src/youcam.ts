@@ -7,7 +7,7 @@ import personaReading from "../public/persona/color_tones.json";
 
 export const BASE_DEFAULT = "https://yce-api-01.makeupar.com/s2s/v2.0";
 
-export type YouCamTask = "skin-tone-analysis" | "cloth-v4" | "makeup-vto";
+export type YouCamTask = "skin-tone-analysis" | "cloth-v4" | "makeup-vto" | "2d-vto/earring";
 
 export interface Upload { bytes: Uint8Array; type: string; name: string }
 
@@ -39,6 +39,7 @@ const PHOTO_ADVICE: Record<string, string> = {
   error_multi_person: "Only one person should be in the photo.",
   error_pose: "Stand facing the camera with your arms slightly away from your body.",
   error_lighting: "Find softer, even light and try again.",
+  error_face_parsing: "We couldn't see your ears to place the earrings. That's fine: your metal still shows in the look.",
 };
 
 export function mapTaskError(code: string, message?: string): YouCamError {
@@ -70,7 +71,8 @@ export class LiveYouCam {
   private base: string;
   private sleep: (ms: number) => Promise<void>;
   constructor(private cfg: LiveConfig) {
-    this.f = cfg.fetch ?? fetch;
+    // Bind the global: calling an unbound `fetch` as a method throws "Illegal invocation" in Workers.
+    this.f = cfg.fetch ?? ((input, init) => fetch(input, init));
     this.base = cfg.base ?? BASE_DEFAULT;
     this.sleep = cfg.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
   }
@@ -157,3 +159,26 @@ export function replayTryonPath(productId: string, colorwayId: string): string {
 }
 
 export const REPLAY_MAKEUP = "/persona/makeup.jpg";
+
+export type Metal = "gold" | "silver" | "rose gold";
+const METAL_FILE: Record<Metal, string> = { gold: "gold", silver: "silver", "rose gold": "rose-gold" };
+
+/** Catalogue earring image for a palette metal. */
+export function earringAsset(metal: Metal): string {
+  return `/catalog/jewelry/earring_${METAL_FILE[metal]}.jpg`;
+}
+
+/** Where a recorded persona earring render for a metal lives in public/ (it may not exist yet). */
+export function replayEarringPath(metal: Metal): string {
+  return `/persona/earring_${METAL_FILE[metal]}.jpg`;
+}
+
+/** 2D jewellery VTO payload: one earring on the face photo, background removed by the engine. */
+export function earringPayload(srcFileId: string, refFileId: string): Record<string, unknown> {
+  return {
+    src_file_id: srcFileId,
+    ref_file_ids: [refFileId],
+    source_info: { name: srcFileId },
+    object_infos: [{ name: refFileId, parameter: { earring_need_remove_background: true, earring_occluded_type: 0 } }],
+  };
+}

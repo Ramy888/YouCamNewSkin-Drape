@@ -14,7 +14,7 @@ import { randomId, sha256Hex, stripJpegMetadata, validateImage } from "./images"
 import { BudgetError, Ledger, migrateLedger, type JobType, type Sql, UNIT_COST } from "./ledger";
 import { buildPalette, verdictFor, type Palette } from "./palette";
 import rules from "./palette-rules.json";
-import { LiveYouCam, PERSONA_READING, REPLAY_MAKEUP, replayTryonPath, type ColorTonesColor, YouCamError } from "./youcam";
+import { earringAsset, earringPayload, LiveYouCam, type Metal, PERSONA_READING, REPLAY_MAKEUP, replayEarringPath, replayTryonPath, type ColorTonesColor, YouCamError } from "./youcam";
 
 export interface Env {
   DRAPE: DurableObjectNamespace<DrapeState>;
@@ -173,7 +173,7 @@ export class DrapeState extends DurableObject<Env> {
     if (mm && m === "GET") return this.getJob(req, mm[1]);
     mm = p.match(/^\/v1\/files\/((?:cat|u|r)\/[A-Za-z0-9_\-/.]+)$/);
     if (mm && m === "GET") return this.file(mm[1]);
-    if (p === "/v1/admin/ledger" && m === "GET") { await this.seller(req); return Response.json(this.ledger.summary()); }
+    if (p === "/v1/admin/ledger" && m === "GET") { await this.seller(req); return Response.json({ ...this.ledger.summary(), stuckEntries: this.ledger.stuck() }); }
     if (p === "/v1/admin/products" && m === "GET") {
       await this.seller(req);
       const rows = this.sql.exec(`SELECT id FROM products WHERE store_id = 'demo' ORDER BY id`);
@@ -426,7 +426,7 @@ export class DrapeState extends DurableObject<Env> {
     const s = await this.session(req);
     const body = (await req.json().catch(() => ({}))) as { type?: string; productId?: string; colorwayId?: string };
     const type = body.type as JobType;
-    if (!type || !(type in UNIT_COST) || type === "jewelry") throw bad("type must be color_reading, tryon or makeup.", 'Send {"type":"tryon","productId":"…","colorwayId":"…"}.');
+    if (!type || !(type in UNIT_COST)) throw bad("type must be color_reading, tryon, makeup or jewelry.", 'Send {"type":"tryon","productId":"…","colorwayId":"…"}.');
     const params: Record<string, string> = {};
     if (type === "tryon") {
       const p = this.product(body.productId ?? "", true);
@@ -434,10 +434,11 @@ export class DrapeState extends DurableObject<Env> {
       if (!cw) throw bad(`Product ${p.id} has no colorway ${body.colorwayId}.`, "Pick one of the product's colorways.");
       params.productId = p.id; params.colorwayId = cw.id; params.category = p.category;
     }
-    if (type === "makeup" && !s.reading) throw bad("Read your colours first.", "Run a color_reading job before makeup.");
+    if ((type === "makeup" || type === "jewelry") && !s.reading) throw bad("Read your colours first.", `Run a color_reading job before ${type}.`);
+    if (type === "jewelry") params.metal = this.palette(s)!.metal;
     const live = !!s.live && this.liveAvailable();
     if (live && !s.persona) {
-      if ((type === "color_reading" || type === "makeup") && !s.face_key) throw new DrapeError("DRAPE_PHOTO_MISSING", 400, "We need your face photo first.", "Upload it with kind=face.");
+      if ((type === "color_reading" || type === "makeup" || type === "jewelry") && !s.face_key) throw new DrapeError("DRAPE_PHOTO_MISSING", 400, "We need your face photo first.", "Upload it with kind=face.");
       if (type === "tryon" && !s.body_key) throw new DrapeError("DRAPE_PHOTO_MISSING", 400, "We need a full-body photo for the try-on.", "Upload it with kind=body.");
     }
     // Same session + same inputs + same rules = same job. A double tap joins the existing job instead of paying twice.
@@ -489,6 +490,13 @@ export class DrapeState extends DurableObject<Env> {
         return;
       }
       this.finish(id, "done", { image: rec, sample: !!sample, note });
+      return;
+    }
+    if (type === "jewelry") {
+      const metal = params.metal as Metal;
+      const rec = await this.recorded(replayEarringPath(metal));
+      if (rec) this.finish(id, "done", { image: rec, metal, sample: !!sample, note });
+      else this.finish(id, "error", null, { kind: "unavailable", message: "Earring preview isn't available in demo mode yet.", retryable: false, metal });
       return;
     }
     const makeup = await this.recorded(REPLAY_MAKEUP);
@@ -557,6 +565,15 @@ export class DrapeState extends DurableObject<Env> {
         ]);
         const out = await yc.run("cloth-v4", { src_file_id: src, ref_file_id: ref, garment_category: job.params.category });
         result = { image: await this.saveResult(s.id, out.image) };
+      } else if (job.type === "jewelry") {
+        const metal = job.params.metal as Metal;
+        const [face, earring] = await Promise.all([this.bytesOf(`/v1/files/${s.face_key}`), this.bytesOf(earringAsset(metal))]);
+        const [src, ref] = await Promise.all([
+          yc.upload("2d-vto/earring", { ...face, name: "face.jpg" }),
+          yc.upload("2d-vto/earring", { ...earring, name: "earring.jpg" }),
+        ]);
+        const out = await yc.run("2d-vto/earring", earringPayload(src, ref));
+        result = { image: await this.saveResult(s.id, out.image), metal };
       } else {
         const palette = this.palette(s)!;
         const face = await this.bytesOf(`/v1/files/${s.face_key}`);
@@ -573,6 +590,7 @@ export class DrapeState extends DurableObject<Env> {
       console.log(JSON.stringify({ level: "info", event: "job_done", job: id, type: job.type, ms: Date.now() - started, units: UNIT_COST[job.type as JobType] }));
     } catch (e) {
       const err = e instanceof YouCamError ? e : new YouCamError("upstream", "internal", "Something went wrong. Try again.", true);
+      if (!(e instanceof YouCamError)) console.error(JSON.stringify({ level: "error", event: "job_crash", job: id, type: job.type, error: String(e), stack: (e as Error)?.stack }));
       if (err.kind === "timeout") this.ledger.markStuck(id); // YouCam may still finish and charge; keep it reserved
       else this.ledger.release(id);
       if (err.kind === "auth" || err.kind === "upstream" || err.kind === "rate_limit") this.noteUpstreamFailure(err.kind === "auth");
