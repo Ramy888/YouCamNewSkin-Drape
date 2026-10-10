@@ -16,7 +16,7 @@ export default {
       fwd.headers.set("x-drape-origin", url.origin);
       const res = await stub(env).fetch(fwd);
       // Catalogue reads are public data: let any store page read them (no credentials involved).
-      if (req.method === "GET" && (url.pathname === "/v1/catalog" || url.pathname.startsWith("/v1/products/"))) {
+      if (req.method === "GET" && (url.pathname === "/v1/catalog" || url.pathname === "/v1/lookup" || url.pathname.startsWith("/v1/products/"))) {
         const out = new Response(res.body, res);
         out.headers.set("access-control-allow-origin", "*");
         return out;

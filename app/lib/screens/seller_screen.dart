@@ -225,6 +225,15 @@ class _ProductEditorState extends State<_ProductEditor> {
   late final _id = TextEditingController(text: widget.product?.id ?? '');
   late final _name = TextEditingController(text: widget.product?.name ?? '');
   late final _price = TextEditingController(text: '${widget.product?.price ?? ''}');
+  late final _links = TextEditingController(text: (widget.product?.links ?? const []).join('\n'));
+
+  @override
+  void dispose() {
+    for (final c in [_id, _name, _price, _links, for (final r in _rows) ...[r.id, r.name, r.hex]]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
   late String _category = widget.product?.category ?? 'full_body';
   late final List<_CwRow> _rows = [
     for (final c in widget.product?.colorways ?? <Colorway>[])
@@ -241,6 +250,7 @@ class _ProductEditorState extends State<_ProductEditor> {
         'colorways': [
           for (final r in _rows) {'id': r.id.text.trim(), 'name': r.name.text.trim(), 'hex': r.hex.text.trim()},
         ],
+        'links': [for (final l in _links.text.split('\n')) if (l.trim().isNotEmpty) l.trim()],
       };
 
   @override
@@ -256,6 +266,18 @@ class _ProductEditorState extends State<_ProductEditor> {
           SizedBox(width: 200, child: TextField(controller: _id, enabled: !editing, decoration: const InputDecoration(labelText: 'Product id (e.g. abaya-classic)'))),
           SizedBox(width: 260, child: TextField(controller: _name, decoration: const InputDecoration(labelText: 'Name'))),
           SizedBox(width: 120, child: TextField(controller: _price, decoration: const InputDecoration(labelText: 'Price'))),
+          SizedBox(
+            width: 600,
+            child: TextField(
+              controller: _links,
+              minLines: 2,
+              maxLines: 5,
+              decoration: const InputDecoration(
+                labelText: 'Where you sell it (one product page link per line)',
+                helperText: 'Shoppers using the Drape extension on these pages land straight on this product.',
+              ),
+            ),
+          ),
           SizedBox(
             width: 180,
             child: DropdownButtonFormField<String>(

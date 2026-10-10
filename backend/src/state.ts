@@ -12,6 +12,7 @@ import { bearer, hashKey, signSession, verifySession, visitorId } from "./auth";
 import { bad, DrapeError, errorResponse } from "./errors";
 import { randomId, sha256Hex, stripJpegMetadata, validateImage } from "./images";
 import { BudgetError, Ledger, migrateLedger, type JobType, type Sql, UNIT_COST } from "./ledger";
+import { linkKeys, validLink } from "./links";
 import { buildPalette, verdictFor, type Palette } from "./palette";
 import rules from "./palette-rules.json";
 import { earringAsset, earringPayload, LiveYouCam, type Metal, PERSONA_READING, REPLAY_MAKEUP, replayEarringPath, replayTryonPath, type ColorTonesColor, YouCamError } from "./youcam";
@@ -40,7 +41,7 @@ const CATEGORIES: Category[] = ["upper_body", "lower_body", "full_body", "outer"
 const SESSION_TTL_MS = 24 * 3600 * 1000;
 
 interface Colorway { id: string; name: string; hex: string; image: string }
-interface Product { id: string; storeId: string; name: string; category: Category; price: number; currency: string; colorways: Colorway[]; status: string }
+interface Product { id: string; storeId: string; name: string; category: Category; price: number; currency: string; colorways: Colorway[]; links?: string[]; status: string }
 interface SessionRow {
   id: string; store_id: string; store_origin: string; visitor: string; persona: number; live: number;
   face_key: string | null; body_key: string | null; reading: string | null; override: string | null;
@@ -48,7 +49,7 @@ interface SessionRow {
 }
 
 /** Bump when SEED_PRODUCTS changes so deployed stores pick up the new seed catalogue. */
-const SEED_VERSION = "2";
+const SEED_VERSION = "3";
 const SEED_PRODUCTS: Omit<Product, "storeId" | "status">[] = [
   {
     id: "abaya-classic",
@@ -61,6 +62,7 @@ const SEED_PRODUCTS: Omit<Product, "storeId" | "status">[] = [
       { id: "emerald", name: "Emerald", hex: "#1f7a55", image: "/catalog/abaya-classic_emerald.jpg" },
       { id: "lavender", name: "Lavender", hex: "#b7a6d8", image: "/catalog/abaya-classic_lavender.jpg" },
     ],
+    links: ["https://noor-modest.ramy-comm.workers.dev/"],
   },
 ];
 
@@ -158,6 +160,7 @@ export class DrapeState extends DurableObject<Env> {
     if (p === "/health") return this.health();
     if (p === "/internal/sweep" && m === "POST") return Response.json(await this.sweep());
     if (p === "/v1/catalog" && m === "GET") return this.catalog(url);
+    if (p === "/v1/lookup" && m === "GET") return this.lookup(url);
     let mm = p.match(/^\/v1\/products\/([a-z0-9-]+)$/);
     if (mm && m === "GET") return Response.json({ product: this.product(mm[1], true) });
     if (p === "/v1/products" && m === "POST") return this.upsertProduct(req);
@@ -223,6 +226,22 @@ export class DrapeState extends DurableObject<Env> {
     return Response.json({ store: { id: store.id, name: store.name }, products: rows.map((r) => this.product(String(r.id), true)) });
   }
 
+  /** Match a page address against products' listing links (extension door). Only the address is used. */
+  private lookup(url: URL): Response {
+    let wanted: string[];
+    try { wanted = linkKeys(url.searchParams.get("url") ?? ""); }
+    catch { throw bad("url must be a web address.", "Send ?url=https://…"); }
+    const rows = this.sql.exec(`SELECT p.id, s.pk, s.name FROM products p JOIN stores s ON s.id = p.store_id WHERE p.status = 'published' ORDER BY p.id`);
+    for (const r of rows) {
+      const product = this.product(String(r.id), true);
+      const keys = new Set((product.links ?? []).flatMap((l) => { try { return linkKeys(l); } catch { return []; } }));
+      if (wanted.some((k) => keys.has(k))) {
+        return Response.json({ product: { id: product.id, name: product.name, colorways: product.colorways.map((c) => ({ id: c.id, name: c.name, hex: c.hex })) }, store: { name: String(r.name), key: String(r.pk) } });
+      }
+    }
+    throw new DrapeError("DRAPE_PRODUCT_NOT_FOUND", 404, "This product isn't on Drape yet.", "Ask the seller to add it to Drape with this page's link.");
+  }
+
   private async seller(req: Request) {
     const key = bearer(req);
     const row = this.sql.exec(`SELECT sk_hash FROM stores WHERE id = 'demo'`)[0];
@@ -244,11 +263,13 @@ export class DrapeState extends DurableObject<Env> {
       return { id: c.id, name: (c.name ?? c.id).slice(0, 40), hex: c.hex.toLowerCase(), image: c.image ?? "" };
     });
     if (colorways.length === 0) throw bad("Add at least one colorway.", "Send colorways: [{id, name, hex}].");
+    const links = (body.links ?? []).map(String).filter((l) => l.trim());
+    if (links.length > 10 || links.some((l) => !validLink(l))) throw bad("links must be up to 10 web addresses (https://…).", "Paste the product page URL from each store where you sell it.");
     let existing: Product | undefined;
     try { existing = this.product(body.id, false); } catch { existing = undefined; }
     for (const c of colorways) c.image = existing?.colorways.find((x) => x.id === c.id)?.image ?? c.image;
     const product: Omit<Product, "storeId" | "status"> = {
-      id: body.id, name: body.name, category: body.category, price: Number(body.price ?? 0), currency: body.currency ?? "EGP", colorways,
+      id: body.id, name: body.name, category: body.category, price: Number(body.price ?? 0), currency: body.currency ?? "EGP", colorways, links,
     };
     const status = body.status === "draft" || body.status === "disabled" ? body.status : "published";
     this.sql.exec(`INSERT INTO products (id, store_id, data, status, updated_at) VALUES (?, 'demo', ?, ?, ?)

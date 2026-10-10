@@ -11,6 +11,10 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - name: Extension reads only the page address (no content scripts, no host access)
+        run: |
+          node -e 'const m=require("../extension/manifest.json"); const bad=["content_scripts","host_permissions","optional_host_permissions"].filter(k=>m[k]).concat((m.permissions||[]).filter(p=>p!=="activeTab")); if(bad.length){console.error("extension asks for more than activeTab:",bad);process.exit(1)}'
+          if grep -nE "chrome\.scripting|executeScript|document\.(body|querySelector)" ../extension/popup.js; then echo "extension must not touch page content"; exit 1; fi
       - name: No YouCam key or secret in shipped static files
         run: |
           # Keys are 32+ char tokens; the API key must never be in public/ (the Flutter bundle lives there).

@@ -52,6 +52,17 @@ Every call goes through the backend (the API key never reaches the browser). Flo
   When any limit is hit, the buyer sees the labelled sample result instead of an error.
 - **Kill switch:** `FORCE_REPLAY=1`, and three upstream failures in a row (or one auth failure) switch to replay for 30 minutes.
 
+## Chrome extension (optional)
+
+On a product page whose link the seller added to Drape, one click on the Drape icon opens Drape for that product.
+The extension uses only the page address (`activeTab` permission; no content scripts, no host access), and CI checks that.
+
+1. Download https://drape.ramy-comm.workers.dev/extension/drape-extension.zip and unzip it (or use the `extension/` folder).
+2. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked**, pick the folder.
+3. Open the demo shop and click the Drape icon in the toolbar.
+
+Sellers add links in the seller console ("Where you sell it"). Amazon listings match by ASIN on any Amazon domain.
+
 ## Run locally (replay mode, no API key, no units)
 
 Requirements: Node 20+, Flutter 3.41+ (only to rebuild the app).
@@ -94,6 +105,7 @@ The store's origin must be on the allowed list (`ALLOWED_ORIGINS`). Misconfigura
 |---|---|---|---|
 | GET | `/v1/catalog?key=pk_…` | publishable key | published products of a store |
 | GET | `/v1/products/:id` | none | one product (CORS open, public data) |
+| GET | `/v1/lookup?url=…` | none | the product whose seller-added listing link matches this page address |
 | POST | `/v1/products` | `Bearer sk_…` | create / update a product and its colorways |
 | PUT | `/v1/products/:id/colorways/:cid/image` | `Bearer sk_…` | upload a colorway image (JPEG/PNG ≤ 10 MB) |
 | POST | `/v1/sessions` | publishable key in body | start a buyer session `{key, storeOrigin, persona?}` → `{token, session}` |
@@ -148,6 +160,7 @@ salted daily hash.
 - `backend/` — Cloudflare Worker, Durable Object, tests, static assets (`public/`: app build, embed script, persona fixtures, catalogue)
 - `app/` — Flutter web app (buyer flow + seller console)
 - `stores/noor/` — the fictional demo shop
+- `extension/` — the URL-only Chrome extension
 - `docs/product.md` — build spec · `docs/derisk/` — API gate tests and recorded fixtures · `docs/history.md` — planning history
 
 ## License

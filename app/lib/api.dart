@@ -100,13 +100,16 @@ class Colorway {
 }
 
 class Product {
-  Product({required this.id, required this.name, required this.category, required this.price, required this.currency, required this.colorways});
+  Product({required this.id, required this.name, required this.category, required this.price, required this.currency, required this.colorways, this.links = const []});
   final String id;
   final String name;
   final String category;
   final num price;
   final String currency;
   final List<Colorway> colorways;
+
+  /// Product page URLs on other stores; the Drape extension matches the page address against these.
+  final List<String> links;
 
   factory Product.fromJson(Map<String, dynamic> j) => Product(
         id: '${j['id']}',
@@ -115,6 +118,7 @@ class Product {
         price: (j['price'] as num?) ?? 0,
         currency: '${j['currency'] ?? 'EGP'}',
         colorways: [for (final c in (j['colorways'] as List)) Colorway.fromJson((c as Map).cast<String, dynamic>())],
+        links: [for (final l in (j['links'] as List? ?? const [])) '$l'],
       );
 
   Map<String, dynamic> toJson() => {
@@ -124,6 +128,7 @@ class Product {
         'price': price,
         'currency': currency,
         'colorways': [for (final c in colorways) {'id': c.id, 'name': c.name, 'hex': c.hex}],
+        'links': links,
       };
 }
 
