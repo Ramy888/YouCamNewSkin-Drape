@@ -147,7 +147,10 @@ class BrandMark extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     final ink = onDark ? Colors.white : Tone.ink;
-    return Semantics(
+    // The suffix ("Seller console") is dropped when the bar is too narrow, so the mark never overflows.
+    return LayoutBuilder(builder: (context, c) {
+      final showSuffix = suffix != null && c.maxWidth >= 240;
+      return Semantics(
       label: suffix == null ? 'Drape' : 'Drape $suffix',
       child: ExcludeSemantics(
         child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -158,8 +161,8 @@ class BrandMark extends StatelessWidget {
             child: CustomPaint(painter: _FoldPainter(onDark ? Tone.mulberry : Colors.white)),
           ),
           const SizedBox(width: 10),
-          Text('Drape', style: t.headlineSmall?.copyWith(fontSize: 22, color: ink)),
-          if (suffix != null) ...[
+          Flexible(child: Text('Drape', maxLines: 1, softWrap: false, overflow: TextOverflow.fade, style: t.headlineSmall?.copyWith(fontSize: 22, color: ink))),
+          if (showSuffix) ...[
             const SizedBox(width: 10),
             Container(width: 1, height: 18, color: onDark ? Colors.white24 : Tone.line),
             const SizedBox(width: 10),
@@ -168,6 +171,7 @@ class BrandMark extends StatelessWidget {
         ]),
       ),
     );
+    });
   }
 }
 

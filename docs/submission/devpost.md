@@ -43,7 +43,7 @@ Drape is a button a store adds to its product pages. When a buyer clicks **Try o
 Around the buyer flow:
 
 - **Seller console.** Sellers add products and colourways (with a colour picker of named garment colours), upload one clean photo per
-  colour, list where else the product is sold, and watch the YouCam unit ledger.
+  colour, list where else the product is sold, and watch the YouCam unit ledger. Judges get a view-only key.
 - **Chrome extension (URL only).** On a product page the seller has linked, one click opens Drape for that product. It reads only the
   page address; it never reads page content or crawls.
 - **English and Arabic** with a full right-to-left layout, built for the MENA modest-fashion market.
@@ -64,8 +64,9 @@ Around the buyer flow:
   an error, and repeated upstream failures switch the app to recorded results for 30 minutes.
 - **Embed:** one script tag plus a `data-drape-product` button. Drape opens in a popup (never an iframe) and returns the cart with a
   `postMessage` bound to the store's origin.
-- **Tests:** 53 backend unit tests (palette, ledger, adapter, links), a 22-check end-to-end test of the live path against a mock
-  YouCam server, and 28 Flutter tests (including right-to-left layout and phone-width checks). CI also scans for secrets and checks
+- **Tests:** 53 backend unit tests (palette, ledger, adapter, links), a 32-check end-to-end test of the live path against a mock
+  YouCam server (including the view-only judge key), and 30 Flutter tests (including right-to-left layout, phone-width and
+  view-only console checks). CI also scans for secrets and checks
   that a fresh clone makes zero calls to YouCam.
 
 ## YouCam APIs used

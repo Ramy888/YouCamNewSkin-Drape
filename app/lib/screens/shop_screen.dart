@@ -74,8 +74,16 @@ class _ProductRow extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       child: Row(children: [
-                        Expanded(child: SwatchChip(name: cw.name, hex: cw.hex, size: 26)),
-                        VerdictLabel(verdict: cw.verdict, s: s),
+                        // On narrow phones the verdict drops under the name instead of breaking the word.
+                        Expanded(
+                          child: Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: [SwatchChip(name: cw.name, hex: cw.hex, size: 26), VerdictLabel(verdict: cw.verdict, s: s)],
+                          ),
+                        ),
                         const SizedBox(width: 4),
                         Icon(forwardIcon(context, chevron: true), color: Tone.inkSoft, size: 20),
                       ]),

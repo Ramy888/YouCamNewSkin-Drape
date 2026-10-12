@@ -2,6 +2,7 @@
   // Synthetic demo shop on its own domain, to show Drape working as a third-party embed. Static files only.
   "$schema": "../../backend/node_modules/wrangler/config-schema.json",
   "name": "noor-modest",
+  "account_id": "49a2335350fcd5f21a1da7f542176da5", // ramy-comm.workers.dev (the login can see several accounts)
   "compatibility_date": "2026-09-15",
   "workers_dev": true,
   "preview_urls": false,

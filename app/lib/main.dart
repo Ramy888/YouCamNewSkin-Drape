@@ -3,6 +3,7 @@
 //   #/start?pk=&product=&colorway=&origin=&lang=   entry from the store's "Try on with Drape" popup
 //   #/seller           seller console
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 
 import 'api.dart';
 import 'l10n.dart';
@@ -16,7 +17,11 @@ import 'state.dart';
 import 'theme.dart';
 import 'widgets/common.dart';
 
-void main() => runApp(const DrapeApp());
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SemanticsBinding.instance.ensureSemantics(); // accessible DOM for screen readers and browser automation
+  runApp(const DrapeApp());
+}
 
 class DrapeApp extends StatelessWidget {
   const DrapeApp({super.key});

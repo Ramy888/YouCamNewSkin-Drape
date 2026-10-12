@@ -105,12 +105,16 @@ class _SellerScreenState extends State<SellerScreen> {
           if (_signedIn) ...[
             if (_busy) const Padding(padding: EdgeInsets.all(20), child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))),
             IconButton(tooltip: 'Refresh', onPressed: _busy ? null : _refresh, icon: const Icon(Icons.refresh_rounded)),
-            TextButton.icon(
-              style: TextButton.styleFrom(foregroundColor: Colors.white),
-              onPressed: _signOut,
-              icon: const Icon(Icons.logout_rounded, size: 18),
-              label: const Text('Sign out'),
-            ),
+            // Phones: icon only, so the brand keeps its room in the bar.
+            if (MediaQuery.sizeOf(context).width < 600)
+              IconButton(tooltip: 'Sign out', onPressed: _signOut, icon: const Icon(Icons.logout_rounded))
+            else
+              TextButton.icon(
+                style: TextButton.styleFrom(foregroundColor: Colors.white),
+                onPressed: _signOut,
+                icon: const Icon(Icons.logout_rounded, size: 18),
+                label: const Text('Sign out'),
+              ),
             const SizedBox(width: 12),
           ],
         ],
@@ -419,6 +423,88 @@ class _ProductEditorState extends State<_ProductEditor> {
         'links': [for (final l in _links.text.split('\n')) if (l.trim().isNotEmpty) l.trim()],
       };
 
+  /// One colourway: on wide screens a single line; on phones the photo and fields stack.
+  Widget _colourwayRow(_CwRow r, bool editing) {
+    final thumb = ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: 52,
+        height: 66,
+        color: Tone.surface,
+        child: r.image.isEmpty
+            ? const Icon(Icons.image_outlined, color: Tone.inkSoft)
+            : Image.network(widget.api.abs(r.image), fit: BoxFit.contain, errorBuilder: (_, _, _) => const SizedBox()),
+      ),
+    );
+    final id = TextField(controller: r.id, readOnly: widget.readOnly, decoration: const InputDecoration(labelText: 'Id'));
+    final name = TextField(controller: r.name, readOnly: widget.readOnly, decoration: const InputDecoration(labelText: 'Name'));
+    final colour = TextField(
+      controller: r.hex,
+      readOnly: widget.readOnly,
+      onChanged: (_) => setState(() {}),
+      decoration: InputDecoration(
+        labelText: 'Colour',
+        hintText: '#rrggbb',
+        prefixIcon: IconButton(
+          tooltip: 'Pick from palette',
+          onPressed: widget.readOnly ? null : () => _pick(r),
+          icon: RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(r.hex.text)
+              ? Container(width: 20, height: 20, decoration: BoxDecoration(color: hexColor(r.hex.text), shape: BoxShape.circle, border: Border.all(color: Colors.black12)))
+              : const Icon(Icons.palette_outlined, size: 20),
+        ),
+      ),
+    );
+    final palette = IconButton.outlined(
+      tooltip: 'Pick from palette',
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      style: IconButton.styleFrom(side: const BorderSide(color: Tone.line), backgroundColor: Tone.surface),
+      onPressed: widget.readOnly ? null : () => _pick(r),
+      icon: const Icon(Icons.palette_outlined, color: Tone.mulberry),
+    );
+    final upload = editing
+        ? OutlinedButton.icon(
+            onPressed: widget.busy || widget.readOnly || r.id.text.isEmpty ? null : () => widget.onUpload(widget.product!.id, r.id.text.trim()),
+            icon: const Icon(Icons.upload_rounded, size: 18),
+            label: Text(r.image.isEmpty ? 'Upload photo' : 'Replace photo'),
+          )
+        : null;
+    const gap = SizedBox(width: 10, height: 10);
+    return LayoutBuilder(builder: (context, c) {
+      // Laptop: one line. Tablet: two lines (who it is, then its colour and photo). Phone: stacked.
+      if (c.maxWidth >= 900) {
+        return Row(children: [
+          thumb, gap,
+          Expanded(child: id), gap,
+          Expanded(child: name), gap,
+          SizedBox(width: 160, child: colour), gap,
+          palette,
+          if (upload != null) ...[gap, upload],
+        ]);
+      }
+      if (c.maxWidth >= 520) {
+        return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          thumb, gap,
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Row(children: [Expanded(child: id), gap, Expanded(child: name)]),
+              gap,
+              Row(children: [Expanded(child: colour), gap, palette, if (upload != null) ...[gap, upload]]),
+            ]),
+          ),
+        ]);
+      }
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          thumb, gap,
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [id, gap, name])),
+        ]),
+        gap,
+        Row(children: [Expanded(child: colour), gap, palette]),
+        if (upload != null) ...[gap, upload],
+      ]);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
@@ -436,21 +522,26 @@ class _ProductEditorState extends State<_ProductEditor> {
         if (editing) Tag(text: widget.product!.id, color: Tone.inkSoft, bg: Tone.paperDeep),
       ]),
       section('Details', null),
-      Wrap(spacing: 12, runSpacing: 12, children: [
-        SizedBox(width: 220, child: TextField(controller: _id, enabled: !editing && !widget.readOnly, decoration: const InputDecoration(labelText: 'Product id', hintText: 'abaya-classic'))),
-        SizedBox(width: 280, child: TextField(controller: _name, readOnly: widget.readOnly, decoration: const InputDecoration(labelText: 'Name'))),
-        SizedBox(width: 130, child: TextField(controller: _price, readOnly: widget.readOnly, decoration: const InputDecoration(labelText: 'Price'))),
-        SizedBox(
-          width: 200,
-          child: DropdownButtonFormField<String>(
-            isExpanded: true,
-            initialValue: _category,
-            decoration: const InputDecoration(labelText: 'Garment category'),
-            items: [for (final c in _categories) DropdownMenuItem(value: c, child: Text(c))],
-            onChanged: widget.readOnly ? null : (v) => setState(() => _category = v ?? _category),
-          ),
-        ),
-      ]),
+      LayoutBuilder(builder: (context, c) {
+        final id = TextField(controller: _id, enabled: !editing && !widget.readOnly, decoration: const InputDecoration(labelText: 'Product id', hintText: 'abaya-classic'));
+        final name = TextField(controller: _name, readOnly: widget.readOnly, decoration: const InputDecoration(labelText: 'Name'));
+        final price = TextField(controller: _price, readOnly: widget.readOnly, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Price'));
+        final category = DropdownButtonFormField<String>(
+          isExpanded: true,
+          initialValue: _category,
+          decoration: const InputDecoration(labelText: 'Garment category'),
+          items: [for (final c in _categories) DropdownMenuItem(value: c, child: Text(c))],
+          onChanged: widget.readOnly ? null : (v) => setState(() => _category = v ?? _category),
+        );
+        const gap = SizedBox(width: 12, height: 12);
+        // Wide: one row. Narrow (phones): full-width fields, price and category share a row.
+        return c.maxWidth >= 640
+            ? Row(children: [Expanded(flex: 3, child: id), gap, Expanded(flex: 4, child: name), gap, Expanded(flex: 2, child: price), gap, Expanded(flex: 3, child: category)])
+            : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                id, gap, name, gap,
+                Row(children: [Expanded(flex: 2, child: price), gap, Expanded(flex: 3, child: category)]),
+              ]);
+      }),
       section('Where you sell it', 'Shoppers using the Drape extension on these pages land straight on this product.'),
       TextField(
         controller: _links,
@@ -465,53 +556,7 @@ class _ProductEditorState extends State<_ProductEditor> {
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: Tone.paper, borderRadius: BorderRadius.circular(12), border: Border.all(color: Tone.line)),
-          child: Wrap(spacing: 12, runSpacing: 10, crossAxisAlignment: WrapCrossAlignment.center, children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                width: 52,
-                height: 66,
-                color: Tone.surface,
-                child: r.image.isEmpty
-                    ? const Icon(Icons.image_outlined, color: Tone.inkSoft)
-                    : Image.network(widget.api.abs(r.image), fit: BoxFit.contain, errorBuilder: (_, _, _) => const SizedBox()),
-              ),
-            ),
-            SizedBox(width: 130, child: TextField(controller: r.id, readOnly: widget.readOnly, decoration: const InputDecoration(labelText: 'Id'))),
-            SizedBox(width: 160, child: TextField(controller: r.name, readOnly: widget.readOnly, decoration: const InputDecoration(labelText: 'Name'))),
-            SizedBox(
-              width: 150,
-              child: TextField(
-                controller: r.hex,
-                readOnly: widget.readOnly,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  labelText: 'Colour',
-                  hintText: '#rrggbb',
-                  prefixIcon: IconButton(
-                    tooltip: 'Pick from palette',
-                    onPressed: widget.readOnly ? null : () => _pick(r),
-                    icon: RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(r.hex.text)
-                        ? Container(width: 20, height: 20, decoration: BoxDecoration(color: hexColor(r.hex.text), shape: BoxShape.circle, border: Border.all(color: Colors.black12)))
-                        : const Icon(Icons.palette_outlined, size: 20),
-                  ),
-                ),
-              ),
-            ),
-            IconButton.outlined(
-              tooltip: 'Pick from palette',
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              style: IconButton.styleFrom(side: const BorderSide(color: Tone.line), backgroundColor: Tone.surface),
-              onPressed: widget.readOnly ? null : () => _pick(r),
-              icon: const Icon(Icons.palette_outlined, color: Tone.mulberry),
-            ),
-            if (editing)
-              OutlinedButton.icon(
-                onPressed: widget.busy || widget.readOnly || r.id.text.isEmpty ? null : () => widget.onUpload(widget.product!.id, r.id.text.trim()),
-                icon: const Icon(Icons.upload_rounded, size: 18),
-                label: Text(r.image.isEmpty ? 'Upload photo' : 'Replace photo'),
-              ),
-          ]),
+          child: _colourwayRow(r, editing),
         ),
       Align(alignment: AlignmentDirectional.centerStart, child: TextButton.icon(onPressed: widget.readOnly ? null : _addRow, icon: const Icon(Icons.add_rounded), label: const Text('Add colourway'))),
       if (!editing) Text('Save the product first, then upload a photo for each colourway.', style: t.bodySmall),

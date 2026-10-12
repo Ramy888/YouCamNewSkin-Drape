@@ -50,10 +50,15 @@ class RevealScreen extends StatelessWidget {
       const SizedBox(height: 20),
       DrapeCard(
         padding: const EdgeInsets.fromLTRB(16, 28, 16, 24),
-        child: Wrap(alignment: WrapAlignment.spaceEvenly, spacing: 32, runSpacing: 24, children: [
-          _DrapeSide(face: face, swatch: best, verdict: Verdict.yours, text: s.liftsYou, s: s),
-          if (worst != null) _DrapeSide(face: face, swatch: worst, verdict: Verdict.avoid, text: s.fightsYou, s: s),
-        ]),
+        // Best and worst always sit side by side (the comparison is the point); the drapes shrink to fit a phone.
+        child: LayoutBuilder(builder: (context, c) {
+          final n = worst == null ? 1 : 2;
+          final size = ((c.maxWidth - 16 * (n - 1)) / n / 1.3).clamp(90.0, 150.0);
+          return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Flexible(child: _DrapeSide(face: face, swatch: best, verdict: Verdict.yours, text: s.liftsYou, s: s, size: size)),
+            if (worst != null) Flexible(child: _DrapeSide(face: face, swatch: worst, verdict: Verdict.avoid, text: s.fightsYou, s: s, size: size)),
+          ]);
+        }),
       ),
       const SizedBox(height: 16),
       DrapeCard(
@@ -89,19 +94,20 @@ class RevealScreen extends StatelessWidget {
 }
 
 class _DrapeSide extends StatelessWidget {
-  const _DrapeSide({required this.face, required this.swatch, required this.verdict, required this.text, required this.s});
+  const _DrapeSide({required this.face, required this.swatch, required this.verdict, required this.text, required this.s, this.size = 150});
   final String face;
   final Swatch swatch;
   final Verdict verdict;
   final String text;
   final S s;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     return Column(mainAxisSize: MainAxisSize.min, children: [
-      DrapedFace(url: face, drapeHex: swatch.hex, label: '${swatch.name} · $text', showLabel: false),
+      DrapedFace(url: face, drapeHex: swatch.hex, label: '${swatch.name} · $text', showLabel: false, size: size),
       const SizedBox(height: 8),
-      Text(swatch.name, style: Theme.of(context).textTheme.titleMedium),
+      Text(swatch.name, textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 6),
       VerdictLabel(verdict: verdict, s: s, text: text),
     ]);
