@@ -44,7 +44,7 @@ const CATEGORIES: Category[] = ["upper_body", "lower_body", "full_body", "outer"
 const SESSION_TTL_MS = 24 * 3600 * 1000;
 
 interface Colorway { id: string; name: string; hex: string; image: string }
-interface Product { id: string; storeId: string; name: string; category: Category; price: number; currency: string; colorways: Colorway[]; links?: string[]; status: string }
+interface Product { id: string; storeId: string; store?: string; name: string; category: Category; price: number; currency: string; colorways: Colorway[]; links?: string[]; status: string }
 interface SessionRow {
   id: string; store_id: string; store_origin: string; visitor: string; persona: number; live: number;
   face_key: string | null; body_key: string | null; reading: string | null; override: string | null;
@@ -52,7 +52,7 @@ interface SessionRow {
 }
 
 /** Bump when SEED_PRODUCTS changes so deployed stores pick up the new seed catalogue. */
-const SEED_VERSION = "5";
+const SEED_VERSION = "6";
 const SEED_PRODUCTS: Omit<Product, "storeId" | "status">[] = [
   {
     id: "abaya-classic",
@@ -69,6 +69,7 @@ const SEED_PRODUCTS: Omit<Product, "storeId" | "status">[] = [
   },
   {
     id: "kaftan-coat",
+    store: "layla",
     name: "Woven kaftan coat",
     category: "outer",
     price: 1450,
@@ -78,6 +79,7 @@ const SEED_PRODUCTS: Omit<Product, "storeId" | "status">[] = [
       { id: "aqua", name: "Aqua", hex: "#4ab8b5", image: "/catalog/kaftan-coat_aqua.jpg" },
       { id: "blush", name: "Blush pink", hex: "#ed9ece", image: "/catalog/kaftan-coat_blush.jpg" },
     ],
+    links: ["https://layla-boutique.ramy-comm.workers.dev/"],
   },
   {
     // Cool-toned colourways only: for a warm buyer nothing here is "Yours", which is where "see it in your colour" starts.
@@ -91,7 +93,20 @@ const SEED_PRODUCTS: Omit<Product, "storeId" | "status">[] = [
       { id: "icy-pink", name: "Icy pink", hex: "#f2c8d8", image: "/catalog/abaya-everyday_icy-pink.jpg" },
       { id: "cool-grey", name: "Cool grey", hex: "#9aa3ad", image: "/catalog/abaya-everyday_cool-grey.jpg" },
     ],
+    links: ["https://noor-modest.ramy-comm.workers.dev/"],
   },
+];
+
+/**
+ * Fictional demo stores (no real brands, per the hackathon rules). "drape" is Drape's own catalogue: its sessions list every
+ * store's published products, each with a link to buy at that store. Real sellers' Amazon / Noon / Shopify listing links
+ * appear the same way once they add them in the console.
+ */
+const MARKETPLACE = "drape";
+const SEED_STORES = [
+  { id: "demo", name: "Noor Modest", url: "https://noor-modest.ramy-comm.workers.dev/", pk: null as string | null },
+  { id: "layla", name: "Layla Boutique", url: "https://layla-boutique.ramy-comm.workers.dev/", pk: "pk_layla_demo" },
+  { id: MARKETPLACE, name: "Drape", url: "", pk: "pk_drape" },
 ];
 
 export class DrapeState extends DurableObject<Env> {
@@ -122,6 +137,7 @@ export class DrapeState extends DurableObject<Env> {
       status TEXT, result TEXT, error TEXT, ledger_id TEXT, created_at INTEGER, updated_at INTEGER)`);
     this.sql.exec(`CREATE INDEX IF NOT EXISTS jobs_session ON jobs(session_id)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT)`);
+    if (!this.sql.exec(`PRAGMA table_info(stores)`).some((c) => c.name === "url")) this.sql.exec(`ALTER TABLE stores ADD COLUMN url TEXT`);
     // Colour demand: kept after sessions are purged. No photos, no visitor ids: product, colour, undertone and whether it
     // came from the sample-person demo (counted separately so demo clicks never pass as real buyers).
     this.sql.exec(`CREATE TABLE IF NOT EXISTS demand (id TEXT PRIMARY KEY, store_id TEXT, product_id TEXT, kind TEXT, colour_id TEXT,
@@ -139,17 +155,22 @@ export class DrapeState extends DurableObject<Env> {
   }
 
   private async demoStore() {
-    const pk = this.env.DEMO_PUBLISHABLE_KEY ?? "pk_demo_drape";
     const skHash = this.env.SELLER_SECRET ? await hashKey(this.env.SELLER_SECRET) : null;
-    this.sql.exec(
-      `INSERT INTO stores (id, name, pk, sk_hash, origins) VALUES ('demo', 'Noor Modest (demo store)', ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET pk = excluded.pk, sk_hash = excluded.sk_hash, origins = excluded.origins`,
-      pk, skHash, JSON.stringify(this.origins()),
-    );
+    for (const st of SEED_STORES) {
+      const pk = st.pk ?? this.env.DEMO_PUBLISHABLE_KEY ?? "pk_demo_drape";
+      const url = st.id === MARKETPLACE ? (this.env.PUBLIC_ORIGIN ?? this.selfOrigin) : st.url;
+      // Only Noor Modest has a seller sign-in in the demo; the other fictional stores are listed, not managed.
+      this.sql.exec(
+        `INSERT INTO stores (id, name, pk, sk_hash, origins, url) VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET name = excluded.name, pk = excluded.pk, sk_hash = excluded.sk_hash, origins = excluded.origins, url = excluded.url`,
+        st.id, st.name, pk, st.id === "demo" ? skHash : null, JSON.stringify(this.origins()), url,
+      );
+    }
     if (this.kv("seed_version") !== SEED_VERSION) {
       for (const p of SEED_PRODUCTS) {
-        this.sql.exec(`INSERT INTO products (id, store_id, data, status, updated_at) VALUES (?, 'demo', ?, 'published', ?)
-          ON CONFLICT(id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at`, p.id, JSON.stringify(p), Date.now());
+        this.sql.exec(`INSERT INTO products (id, store_id, data, status, updated_at) VALUES (?, ?, ?, 'published', ?)
+          ON CONFLICT(id) DO UPDATE SET store_id = excluded.store_id, data = excluded.data, updated_at = excluded.updated_at`,
+          p.id, p.store ?? "demo", JSON.stringify(p), Date.now());
       }
       this.setKv("seed_version", SEED_VERSION);
     }
@@ -197,6 +218,11 @@ export class DrapeState extends DurableObject<Env> {
     if (p === "/internal/sweep" && m === "POST") return Response.json(await this.sweep());
     if (p === "/v1/catalog" && m === "GET") return this.catalog(url);
     if (p === "/v1/lookup" && m === "GET") return this.lookup(url);
+    if (p === "/v1/stores" && m === "GET") {
+      const rows = this.sql.exec(`SELECT s.id, s.name, s.url, COUNT(p.id) AS n FROM stores s LEFT JOIN products p ON p.store_id = s.id AND p.status = 'published'
+        WHERE s.id != ? GROUP BY s.id ORDER BY s.name`, MARKETPLACE);
+      return Response.json({ stores: rows.map((r) => ({ id: String(r.id), name: String(r.name), url: r.url ? String(r.url) : null, products: Number(r.n) })) });
+    }
     let mm = p.match(/^\/v1\/products\/([a-z0-9-]+)$/);
     if (mm && m === "GET") return Response.json({ product: this.product(mm[1], true) });
     if (p === "/v1/products" && m === "POST") return this.upsertProduct(req);
@@ -398,13 +424,20 @@ export class DrapeState extends DurableObject<Env> {
 
   private async sessionView(s: SessionRow) {
     const palette = this.palette(s);
-    const products = this.sql.exec(`SELECT id FROM products WHERE store_id = ? AND status = 'published' ORDER BY id`, s.store_id)
+    // A store's session sees that store's products; Drape's own catalogue sees every store's.
+    const stores = new Map(this.sql.exec(`SELECT id, name, url FROM stores`).map((r) => [String(r.id), { id: String(r.id), name: String(r.name), url: r.url ? String(r.url) : null }]));
+    const products = (s.store_id === MARKETPLACE
+      ? this.sql.exec(`SELECT id FROM products WHERE status = 'published' AND store_id != ? ORDER BY store_id, id`, MARKETPLACE)
+      : this.sql.exec(`SELECT id FROM products WHERE store_id = ? AND status = 'published' ORDER BY id`, s.store_id))
       .map((r) => this.product(String(r.id), true))
       .map((p) => {
         const colorways = p.colorways.map((c) => ({ ...c, ...(palette ? verdictFor(palette, c.hex) : {}) }));
         // Only offered when the catalogue runs out for this buyer, and only with templates checked for cut and modesty.
         const suggestion = palette && noColourwaySuits(palette, p.colorways.map((c) => c.hex)) ? suggestFabric(palette, { liveOnly: true }) : null;
-        return { ...p, colorways, suggestion };
+        const store = stores.get(p.storeId) ?? null;
+        // Where to finish checkout: the seller's own listing link, else the store's home page.
+        const buyUrl = p.links?.[0] ?? store?.url ?? null;
+        return { ...p, colorways, suggestion, store, buyUrl };
       });
     const jobs = this.sql.exec(`SELECT id FROM jobs WHERE session_id = ? ORDER BY created_at`, s.id).map((r) => this.jobView(String(r.id)));
     return {
@@ -733,7 +766,7 @@ export class DrapeState extends DurableObject<Env> {
     if (!palette) return;
     const cw = this.product(productId, true).colorways.find((c) => c.id === colorwayId)!;
     this.sql.exec(`INSERT INTO demand (id, store_id, product_id, kind, colour_id, colour_name, colour_hex, verdict, undertone, persona, session_id, created_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, randomId("dm_", 10), s.store_id, productId, "tried", cw.id, cw.name, cw.hex,
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, randomId("dm_", 10), this.product(productId, true).storeId, productId, "tried", cw.id, cw.name, cw.hex,
       verdictFor(palette, cw.hex).verdict, palette.undertone, this.isDemo(s), s.id, Date.now());
   }
 
@@ -749,7 +782,7 @@ export class DrapeState extends DurableObject<Env> {
     const already = this.sql.exec(`SELECT 1 FROM demand WHERE session_id = ? AND product_id = ? AND kind = 'requested' AND colour_id = ?`, s.id, p.id, t.id).length > 0;
     if (!already) {
       this.sql.exec(`INSERT INTO demand (id, store_id, product_id, kind, colour_id, colour_name, colour_hex, verdict, undertone, persona, session_id, created_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, randomId("dm_", 10), s.store_id, p.id, "requested", t.id, t.name, t.hex, "yours", palette.undertone, this.isDemo(s), s.id, Date.now());
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, randomId("dm_", 10), p.storeId, p.id, "requested", t.id, t.name, t.hex, "yours", palette.undertone, this.isDemo(s), s.id, Date.now());
     }
     return Response.json({ request: { productId: p.id, template: t.id, colour: t.name, hex: t.hex }, alreadyAsked: already }, { status: already ? 200 : 201 });
   }

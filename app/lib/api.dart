@@ -115,8 +115,16 @@ class FabricSuggestion {
       );
 }
 
+/// The store that sells a product; Drape's own catalogue lists several.
+class StoreRef {
+  const StoreRef({required this.id, required this.name, this.url});
+  final String id;
+  final String name;
+  final String? url;
+}
+
 class Product {
-  Product({required this.id, required this.name, required this.category, required this.price, required this.currency, required this.colorways, this.links = const [], this.suggestion});
+  Product({required this.id, required this.name, required this.category, required this.price, required this.currency, required this.colorways, this.links = const [], this.suggestion, this.store, this.buyUrl});
   final String id;
   final String name;
   final String category;
@@ -130,6 +138,10 @@ class Product {
   /// Set when none of the colourways suit this buyer.
   final FabricSuggestion? suggestion;
 
+  /// Who sells it, and where to finish checkout (the seller's listing, else the store's home page).
+  final StoreRef? store;
+  final String? buyUrl;
+
   factory Product.fromJson(Map<String, dynamic> j) => Product(
         id: '${j['id']}',
         name: '${j['name']}',
@@ -139,6 +151,8 @@ class Product {
         colorways: [for (final c in (j['colorways'] as List)) Colorway.fromJson((c as Map).cast<String, dynamic>())],
         links: [for (final l in (j['links'] as List? ?? const [])) '$l'],
         suggestion: j['suggestion'] is Map ? FabricSuggestion.fromJson((j['suggestion'] as Map).cast<String, dynamic>()) : null,
+        store: j['store'] is Map ? StoreRef(id: '${j['store']['id']}', name: '${j['store']['name']}', url: j['store']['url'] as String?) : null,
+        buyUrl: j['buyUrl'] as String?,
       );
 
   Map<String, dynamic> toJson() => {

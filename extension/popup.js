@@ -21,7 +21,12 @@ async function run() {
     return;
   }
   if (res.status === 404) {
-    render("<h1>Not on Drape yet</h1><p>This product hasn't been added to Drape. Ask the seller to add it, then click again.</p>");
+    render(`<h1>Not on Drape yet</h1><p>This product hasn't been added to Drape. Ask the seller to add it, then click again.</p>
+      <button id="browse">Browse Drape's catalogue</button>`);
+    document.getElementById("browse").addEventListener("click", () => {
+      chrome.tabs.create({ url: `${DRAPE}/app/` });
+      window.close();
+    });
     return;
   }
   if (!res.ok) {

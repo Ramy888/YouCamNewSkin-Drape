@@ -2,6 +2,7 @@
 // isn't available), the palette metal, and the bundle hand-off to the store's cart.
 import 'package:flutter/material.dart';
 
+import '../platform/platform.dart';
 import '../state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
@@ -35,7 +36,7 @@ class LookScreen extends StatelessWidget {
       const SizedBox(height: 14),
       Text(s.lipShade, style: t.bodySmall),
       const SizedBox(height: 6),
-      SwatchChip(name: palette.lip.name, hex: palette.lip.hex, size: 26, pill: true),
+      SwatchChip(name: s.colour(palette.lip.name), hex: palette.lip.hex, size: 26, pill: true),
       const SizedBox(height: 20),
       const Divider(),
       const SizedBox(height: 20),
@@ -80,8 +81,8 @@ class LookScreen extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(s.yourPick.toUpperCase(), style: t.labelMedium?.copyWith(color: Tone.mulberry, letterSpacing: 1.2)),
                 const SizedBox(height: 4),
-                Text('${product.name} · ${pair.pick.name}', style: t.titleMedium),
-                Text('${s.lipShade}: ${palette.lip.name} · ${s.metalLabel}: ${s.metal(palette.metal)}', style: t.bodyMedium),
+                Text('${product.name} · ${s.colour(pair.pick.name)}', style: t.titleMedium),
+                Text('${s.lipShade}: ${s.colour(palette.lip.name)} · ${s.metalLabel}: ${s.metal(palette.metal)}', style: t.bodyMedium),
               ]),
             ),
             const SizedBox(width: 12),
@@ -90,7 +91,16 @@ class LookScreen extends StatelessWidget {
           const SizedBox(height: 20),
           if (app.addedAtStore) Notice(text: s.addedAtStore)
           else if (app.demoOrderPlaced) Notice(text: s.orderPlaced, fix: s.demoCheckout)
-          else ...[
+          else if (app.entry.storeOrigin == null && product.buyUrl != null && product.store != null) ...[
+            // Opened from Drape's own catalogue: checkout happens at the store that sells the piece.
+            FilledButton.icon(
+              onPressed: () => Platform.openUrl(product.buyUrl!),
+              icon: const Icon(Icons.open_in_new_rounded),
+              label: Text(s.buyAt(product.store!.name)),
+            ),
+            const SizedBox(height: 8),
+            Text(s.buyAtNote, style: t.bodySmall, textAlign: TextAlign.center),
+          ] else ...[
             FilledButton.icon(onPressed: app.addToCart, icon: const Icon(Icons.shopping_bag_outlined), label: Text(s.addBundle)),
             if (app.entry.storeOrigin == null) ...[const SizedBox(height: 8), Text(s.demoCheckout, style: t.bodySmall, textAlign: TextAlign.center)],
           ],

@@ -65,14 +65,14 @@ class RevealScreen extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(s.suitsLabel, style: t.titleMedium),
           const SizedBox(height: 12),
-          Wrap(spacing: 10, runSpacing: 10, children: [for (final sw in palette.suits.take(8)) SwatchChip(name: sw.name, hex: sw.hex, size: 28, pill: true)]),
+          Wrap(spacing: 10, runSpacing: 10, children: [for (final sw in palette.suits.take(8)) SwatchChip(name: s.colour(sw.name), hex: sw.hex, size: 28, pill: true)]),
           if (palette.avoid.isNotEmpty) ...[
             const SizedBox(height: 20),
             const Divider(),
             const SizedBox(height: 20),
             Text(s.avoidLabel, style: t.titleMedium),
             const SizedBox(height: 12),
-            Wrap(spacing: 10, runSpacing: 10, children: [for (final sw in palette.avoid) SwatchChip(name: sw.name, hex: sw.hex, size: 24, pill: true)]),
+            Wrap(spacing: 10, runSpacing: 10, children: [for (final sw in palette.avoid) SwatchChip(name: s.colour(sw.name), hex: sw.hex, size: 24, pill: true)]),
           ],
           const SizedBox(height: 20),
           const Divider(),
@@ -105,9 +105,9 @@ class _DrapeSide extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(mainAxisSize: MainAxisSize.min, children: [
-      DrapedFace(url: face, drapeHex: swatch.hex, label: '${swatch.name} · $text', showLabel: false, size: size),
+      DrapedFace(url: face, drapeHex: swatch.hex, label: '${s.colour(swatch.name)} · $text', showLabel: false, size: size),
       const SizedBox(height: 8),
-      Text(swatch.name, textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium),
+      Text(s.colour(swatch.name), textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 6),
       VerdictLabel(verdict: verdict, s: s, text: text),
     ]);

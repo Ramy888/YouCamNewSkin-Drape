@@ -131,7 +131,7 @@ class Tag extends StatelessWidget {
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         if (icon != null) ...[Icon(icon, size: 14, color: color), const SizedBox(width: 4)],
-        Text(text, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: color, letterSpacing: 0.3)),
+        Flexible(child: Text(text, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: color, letterSpacing: 0.3))),
       ]),
     );
   }

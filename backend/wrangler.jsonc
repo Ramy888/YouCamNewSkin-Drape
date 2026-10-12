@@ -28,7 +28,7 @@
     "FACES_PER_VISITOR_PER_DAY": "1",
     "FORCE_REPLAY": "0",
     "DEMO_PUBLISHABLE_KEY": "pk_demo_drape",
-    "ALLOWED_ORIGINS": "https://noor-modest.ramy-comm.workers.dev,http://localhost:8787,http://127.0.0.1:8787,http://localhost:8788",
+    "ALLOWED_ORIGINS": "https://noor-modest.ramy-comm.workers.dev,https://layla-boutique.ramy-comm.workers.dev,http://localhost:8787,http://127.0.0.1:8787,http://localhost:8788",
     "PUBLIC_ORIGIN": "https://drape.ramy-comm.workers.dev"
   }
 }

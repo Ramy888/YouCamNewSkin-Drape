@@ -51,7 +51,7 @@ void main() {
         await tester.pumpWidget(wrap(lang, ShopScreen(app: app)));
         await tester.pump();
         expect(tester.takeException(), isNull);
-        expect(find.text(S(lang).seeItIn('Sea Green Silk')), findsOneWidget);
+        expect(find.text(S(lang).seeItIn(S(lang).colour('Sea Green Silk'))), findsOneWidget);
       });
 
       testWidgets('not-sold compare: the fabric beside what she would buy, and the ask (${size.width.toInt()} ${lang.name})', (tester) async {
@@ -62,7 +62,7 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(find.text(s.notSoldTitle), findsOneWidget);
         expect(find.text(s.notSoldBadge), findsOneWidget);
-        expect(find.text(s.askStore('Sea Green Silk')), findsOneWidget);
+        expect(find.text(s.askStore(s.colour('Sea Green Silk'))), findsOneWidget);
         // The fabric (her colour) sits on the reading-start side, like every approved pick.
         final pick = tester.getCenter(find.byKey(const ValueKey('compare-pick')));
         final off = tester.getCenter(find.byKey(const ValueKey('compare-off')));

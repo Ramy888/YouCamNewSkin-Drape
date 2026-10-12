@@ -81,13 +81,13 @@ class _NotSold extends StatelessWidget {
     final s = app.s;
     final settledJob = app.tryons[settled.id];
     final recolor = app.recolorJob;
-    final fabric = Colorway(id: suggestion.template, name: suggestion.name, hex: suggestion.hex, image: '', verdict: Verdict.yours);
+    final fabric = Colorway(id: suggestion.template, name: s.colour(suggestion.name), hex: suggestion.hex, image: '', verdict: Verdict.yours);
     final note = [settledJob, recolor].whereType<Job>().where((j) => j.sample && j.note != null).map((j) => j.note!).firstOrNull;
     // The recolour only starts once her try-on exists; until then (or if it fails) the colour itself stands in.
     final recolorFailed = recolor != null && !recolor.ok;
     final settledFailed = settledJob != null && !settledJob.ok;
     return DrapePage(maxWidth: 904, children: [
-      StepHeader(eyebrow: s.stepOf(3), title: s.notSoldTitle, lead: s.notSoldLead(product.name, suggestion.name, suggestion.closest.name)),
+      StepHeader(eyebrow: s.stepOf(3), title: s.notSoldTitle, lead: s.notSoldLead(product.name, s.colour(suggestion.name), s.colour(suggestion.closest.name))),
       if (note != null) ...[const SizedBox(height: 10), Notice(text: app.session?.persona == true ? note : s.sampleResult)],
       const SizedBox(height: 16),
       ComparePairView(
@@ -97,7 +97,7 @@ class _NotSold extends StatelessWidget {
           job: recolorFailed || settledFailed ? Job.unavailable() : recolor,
           imageUrl: recolor?.image == null ? null : app.api.abs(recolor!.image!),
           verdict: Verdict.yours,
-          verdictText: s.closeToYour(suggestion.closest.name),
+          verdictText: s.closeToYour(s.colour(suggestion.closest.name)),
           badge: s.notSoldBadge,
           swatchFallback: s.previewUnavailable,
         ),
@@ -119,14 +119,14 @@ class _NotSold extends StatelessWidget {
           child: FilledButton.icon(
             onPressed: app.busy == null ? app.askForColour : null,
             icon: const Icon(Icons.storefront_outlined),
-            label: Text(s.askStore(suggestion.name)),
+            label: Text(s.askStore(s.colour(suggestion.name))),
           ),
         ),
       const SizedBox(height: 12),
       Center(
         child: OutlinedButton(
           onPressed: settledJob?.ok == true ? () => app.completeLook() : null,
-          child: Text(s.completeWith(settled.name)),
+          child: Text(s.completeWith(s.colour(settled.name))),
         ),
       ),
     ]);
@@ -180,9 +180,9 @@ class _Panel extends StatelessWidget {
     final job = side.job;
     Widget body;
     if (job == null) {
-      body = Center(child: Padding(padding: const EdgeInsets.all(12), child: Progress(text: s.dressing(side.colorway.name))));
+      body = Center(child: Padding(padding: const EdgeInsets.all(12), child: Progress(text: s.dressing(s.colour(side.colorway.name)))));
     } else if (job.ok && side.imageUrl != null) {
-      body = Image.network(side.imageUrl!, fit: BoxFit.cover, alignment: Alignment.topCenter, semanticLabel: '${side.colorway.name}: $verdictText');
+      body = Image.network(side.imageUrl!, fit: BoxFit.cover, alignment: Alignment.topCenter, semanticLabel: '${s.colour(side.colorway.name)}: $verdictText');
     } else if (side.swatchFallback != null) {
       final colour = hexColor(side.colorway.hex);
       body = ColoredBox(
@@ -226,7 +226,7 @@ class _Panel extends StatelessWidget {
             Row(children: [
               Container(width: 18, height: 18, decoration: BoxDecoration(color: hexColor(side.colorway.hex), shape: BoxShape.circle, border: Border.all(color: Colors.black.withValues(alpha: 0.12)))),
               const SizedBox(width: 8),
-              Expanded(child: Text(side.colorway.name, style: t.titleMedium)),
+              Expanded(child: Text(s.colour(side.colorway.name), style: t.titleMedium)),
             ]),
             const SizedBox(height: 8),
             VerdictLabel(verdict: verdict, s: s, text: verdictText),

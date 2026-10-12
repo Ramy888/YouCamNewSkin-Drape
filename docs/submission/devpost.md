@@ -46,6 +46,9 @@ Drape is a button a store adds to its product pages. When a buyer clicks **Try o
 
 Around the buyer flow:
 
+- **Drape catalogue.** Opened directly, Drape lists every partner store's products sorted by what suits her, with search and store
+  filters; she tries any piece on and **Buy at {store}** sends her to that store to check out. Stores join with one script tag or
+  the REST API.
 - **Seller console.** Sellers add products and colourways (with a colour picker of named garment colours), upload one clean photo per
   colour, list where else the product is sold, and watch the YouCam unit ledger. Judges get a view-only key.
 - **Chrome extension (URL only).** On a product page the seller has linked, one click opens Drape for that product. It reads only the
@@ -66,7 +69,7 @@ Around the buyer flow:
 - **Unit ledger:** every paid call reserves units first, then commits on success or releases on error. Live mode has a total budget,
   a daily cap and one new face reading per visitor per day. When a limit is hit, the buyer gets the labelled sample result instead of
   an error, and repeated upstream failures switch the app to recorded results for 30 minutes.
-- **Embed:** one script tag plus a `data-drape-product` button. Drape opens in a popup (never an iframe) and returns the cart with a
+- **Embed:** one script tag plus a `data-drape-product` button. Drape opens in a new tab (never an iframe) and returns the cart with a
   `postMessage` bound to the store's origin.
 - **Tests:** 58 backend unit tests (palette, ledger, adapter, links, fabric choice), a 49-check end-to-end test of the live path against a mock
   YouCam server (including the view-only judge key and the Fabric limits), and 62 Flutter tests (right-to-left layout, phone,
@@ -133,6 +136,7 @@ flutter, dart, cloudflare-workers, durable-objects, sqlite, cloudflare-r2, types
 ## Try it out (links)
 
 - Demo store with the button: https://noor-modest.ramy-comm.workers.dev
+- Second demo store: https://layla-boutique.ramy-comm.workers.dev
 - Drape app: https://drape.ramy-comm.workers.dev/app/
 - Seller console: https://drape.ramy-comm.workers.dev/app/#/seller (sign-in key in the testing instructions)
 - Source code: https://github.com/Ramy888/YouCamNewSkin-Drape
@@ -145,7 +149,7 @@ No account or sign-up is needed. The app runs in English and Arabic (switch with
 **Path A: sample person, about 1 minute, always available**
 
 1. Open https://noor-modest.ramy-comm.workers.dev. It is a fictional store, labelled as a demo.
-2. Under the abaya, click **Try on with Drape**. Drape opens in a new window.
+2. Under the abaya, click **Try on with Drape**. Drape opens in a new tab.
 3. Click **Try with the sample person**.
 4. **Your colours:** the reading from YouCam Facial Color Tones, shown as the best and worst colour framing the face.
 5. **Shop your colours** → **See it on me** on the abaya: the emerald colourway (suits her) beside lavender (fights her), on her body.
@@ -165,6 +169,10 @@ fails.
 **Path D: not sold yet (YouCam AI Fabric).** With the sample person, open Shop your colours, scroll to "Everyday satin abaya" (none
 of its colours suit her), tap **See it in Sea Green Silk**, then **Ask the store to make it**. The request appears in the seller
 console under Colour demand, counted as demo.
+
+**Path E: the Drape catalogue.** Open https://drape.ramy-comm.workers.dev/app/, try with the sample person, then **Shop your
+colours**: search, filter by store (Noor Modest, Layla Boutique, both fictional), **See it on me**, and **Buy at {store}** on the
+look card. Layla Boutique (https://layla-boutique.ramy-comm.workers.dev) has its own Drape button too.
 
 **Seller console (view-only judge access):** https://drape.ramy-comm.workers.dev/app/#/seller. The judge key is given in the
 Devpost "Additional info" (judges only) and is kept out of this public repository. It shows everything; saving, uploads and unit

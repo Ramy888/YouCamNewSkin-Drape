@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Drape privacy policy</title>
+  <link rel="icon" href="/app/favicon.png">
+  <style>
+    :root { --paper: #f8f5f0; --ink: #1e1b22; --soft: #5a5560; --line: #e3dbd0; --brand: #5e2750; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif; }
+    main { max-width: 760px; margin: 0 auto; padding: 40px 20px 64px; }
+    header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    header img { width: 36px; height: 36px; }
+    h1 { font-size: 30px; margin: 0; }
+    h2 { font-size: 20px; margin: 32px 0 8px; }
+    p, li { color: var(--ink); }
+    .muted { color: var(--soft); font-size: 15px; }
+    a { color: var(--brand); }
+    table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 15px; }
+    th, td { text-align: start; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  </style>
+</head>
+<body>
+<main>
+  <header><img src="/app/icons/Icon-192.png" alt=""><h1>Drape privacy policy</h1></header>
+  <p class="muted">Last updated: October 12, 2026. Applies to the Drape web app, the "Try on with Drape" store button and the
+    Drape Chrome extension.</p>
+
+  <h2>What Drape does</h2>
+  <p>Drape shows which colour of a garment suits you. You can use a sample person without any photo, or your own face and
+    full-length photos. Drape uses the YouCam API by Perfect Corp. to read your colouring and to show garments, lip colour and
+    earrings on your photo.</p>
+
+  <h2>Data we handle</h2>
+  <table>
+    <tr><th>Data</th><th>Why</th><th>How long</th></tr>
+    <tr><td>Your face and full-length photos (only if you choose to upload them)</td><td>Sent to the YouCam API to read your
+      colours and render try-ons. Photo metadata (location, camera) is removed on upload.</td><td>Deleted after 24 hours, or
+      immediately with "Delete my photos". YouCam keeps task results for up to 24 hours.</td></tr>
+    <tr><td>Try-on results (images)</td><td>Shown back to you.</td><td>Deleted with your photos.</td></tr>
+    <tr><td>Your colour reading (colour values, not the photo)</td><td>To sort products and pick a lip shade and metal.</td>
+      <td>Deleted with your session.</td></tr>
+    <tr><td>Anonymous demand counts (product, colour, warm/cool/neutral)</td><td>So a store can see which colours shoppers
+      asked for. No photo, name or account.</td><td>Kept as counts; the link to your session is removed when you delete it.</td></tr>
+    <tr><td>A daily, salted hash of your network address</td><td>To limit free live try-ons per visitor per day.</td>
+      <td>Not stored as a raw address; changes every day.</td></tr>
+  </table>
+
+  <h2>The Chrome extension</h2>
+  <p>The extension asks for one permission, <code>activeTab</code>. Only when you click its icon, it reads the address of the
+    page you are on and asks Drape whether a seller has added that product. It never reads or changes the page's content, runs
+    no background code and stores nothing. The address is not saved.</p>
+
+  <h2>What we never do</h2>
+  <ul>
+    <li>No accounts, no advertising, no tracking cookies, no selling or sharing of personal data.</li>
+    <li>No use of your photos to train models.</li>
+    <li>No checkout or payment inside Drape: you pay on the store's own website.</li>
+  </ul>
+
+  <h2>Third parties</h2>
+  <p>Photos are processed by the YouCam API (Perfect Corp.). Drape runs on Cloudflare. The stores you buy from have their own
+    privacy policies.</p>
+
+  <h2>Your choices</h2>
+  <p>Use the sample person to try Drape with no photo at all. Delete your photos at any time with "Delete my photos" in the app;
+    everything else expires after 24 hours.</p>
+
+  <p class="muted">Questions: use the support link on Drape's Chrome Web Store listing.</p>
+</main>
+</body>
+</html>

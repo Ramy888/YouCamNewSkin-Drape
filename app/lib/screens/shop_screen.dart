@@ -1,27 +1,66 @@
-// The store, re-sorted by the buyer's colouring. Every product and colourway stays visible; palette
+// The catalogue, re-sorted by the buyer's colouring. Every product and colourway stays visible; palette
 // matches come first and each colourway carries a named verdict.
 import 'package:flutter/material.dart';
 
 import '../api.dart';
 import '../logic.dart';
+import '../platform/platform.dart';
 import '../state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 
-class ShopScreen extends StatelessWidget {
+class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key, required this.app});
   final AppState app;
 
   @override
+  State<ShopScreen> createState() => _ShopScreenState();
+}
+
+/// Drape's catalogue: every store's products (or one store's, when opened from its page), sorted by what suits her,
+/// with a search bar and store filters. Checkout happens at the store that sells the piece.
+class _ShopScreenState extends State<ShopScreen> {
+  String _query = '';
+  String? _storeId;
+
+  @override
   Widget build(BuildContext context) {
+    final app = widget.app;
     final s = app.s;
-    final products = sortProducts(app.session?.products ?? const []);
-    final anyYours = products.any((p) => p.colorways.any((c) => c.verdict == Verdict.yours));
+    final all = sortProducts(app.session?.products ?? const []);
+    final stores = <String, StoreRef>{for (final p in all) if (p.store != null) p.store!.id: p.store!};
+    final q = _query.trim().toLowerCase();
+    final products = [
+      for (final p in all)
+        if ((_storeId == null || p.store?.id == _storeId) &&
+            (q.isEmpty ||
+                p.name.toLowerCase().contains(q) ||
+                (p.store?.name.toLowerCase().contains(q) ?? false) ||
+                p.colorways.any((c) => c.name.toLowerCase().contains(q) || s.colour(c.name).contains(q))))
+          p,
+    ];
+    final anyYours = all.any((p) => p.colorways.any((c) => c.verdict == Verdict.yours));
     return DrapePage(children: [
       StepHeader(eyebrow: s.stepOf(2), title: s.shopTitle),
+      TextField(
+        key: const ValueKey('shop-search'),
+        onChanged: (v) => setState(() => _query = v),
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(hintText: s.searchHint, prefixIcon: const Icon(Icons.search_rounded)),
+      ),
+      if (stores.length > 1) ...[
+        const SizedBox(height: 12),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          ChoiceChip(label: Text(s.allStores), selected: _storeId == null, onSelected: (_) => setState(() => _storeId = null)),
+          for (final st in stores.values)
+            ChoiceChip(label: Text(st.name), selected: _storeId == st.id, onSelected: (on) => setState(() => _storeId = on ? st.id : null)),
+        ]),
+      ],
+      const SizedBox(height: 16),
       if (!anyYours) ...[Notice(text: s.noneMatch), const SizedBox(height: 16)],
+      if (products.isEmpty) Notice(text: s.noResults),
       for (final p in products) ...[
-        _ProductRow(app: app, product: p),
+        _ProductRow(app: app, product: p, showStore: stores.length > 1 || app.entry.storeOrigin == null),
         const SizedBox(height: 16),
       ],
     ]);
@@ -29,9 +68,10 @@ class ShopScreen extends StatelessWidget {
 }
 
 class _ProductRow extends StatelessWidget {
-  const _ProductRow({required this.app, required this.product});
+  const _ProductRow({required this.app, required this.product, this.showStore = false});
   final AppState app;
   final Product product;
+  final bool showStore;
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +99,14 @@ class _ProductRow extends StatelessWidget {
             const SizedBox(width: 12),
             Text('${product.price} ${product.currency}', style: t.titleMedium?.copyWith(fontFeatures: const [FontFeature.tabularFigures()])),
           ]),
+          if (showStore && product.store != null) ...[
+            const SizedBox(height: 4),
+            Row(children: [
+              const Icon(Icons.storefront_outlined, size: 16, color: Tone.inkSoft),
+              const SizedBox(width: 6),
+              Flexible(child: Text(s.soldBy(product.store!.name), style: t.bodySmall)),
+            ]),
+          ],
           const SizedBox(height: 12),
           for (final cw in cws)
             Padding(
@@ -81,7 +129,7 @@ class _ProductRow extends StatelessWidget {
                             crossAxisAlignment: WrapCrossAlignment.center,
                             spacing: 8,
                             runSpacing: 4,
-                            children: [SwatchChip(name: cw.name, hex: cw.hex, size: 26), VerdictLabel(verdict: cw.verdict, s: s)],
+                            children: [SwatchChip(name: s.colour(cw.name), hex: cw.hex, size: 26), VerdictLabel(verdict: cw.verdict, s: s)],
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -97,7 +145,16 @@ class _ProductRow extends StatelessWidget {
             _NotSoldCard(app: app, product: product, suggestion: product.suggestion!),
           ],
           const SizedBox(height: 12),
-          FilledButton.icon(onPressed: () => app.openCompare(product), icon: const Icon(Icons.checkroom_outlined), label: Text(s.tryOn)),
+          Wrap(spacing: 10, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
+            FilledButton.icon(onPressed: () => app.openCompare(product), icon: const Icon(Icons.checkroom_outlined), label: Text(s.tryOn)),
+            // From Drape's own catalogue, checkout is at the store that sells it.
+            if (app.entry.storeOrigin == null && product.buyUrl != null && product.store != null)
+              OutlinedButton.icon(
+                onPressed: () => Platform.openUrl(product.buyUrl!),
+                icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                label: Text(s.buyAt(product.store!.name)),
+              ),
+          ]),
         ]);
         return wide
             ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [image, const SizedBox(width: 24), Expanded(child: info)])
@@ -124,12 +181,12 @@ class _NotSoldCard extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(s.noneYoursHere, style: t.titleMedium?.copyWith(fontSize: 16)),
         const SizedBox(height: 4),
-        Text(s.closeToYour(suggestion.closest.name), style: t.bodySmall),
+        Text(s.closeToYour(s.colour(suggestion.closest.name)), style: t.bodySmall),
         const SizedBox(height: 10),
         OutlinedButton.icon(
           onPressed: () => app.openRecolor(product),
           icon: Container(width: 18, height: 18, decoration: BoxDecoration(color: hexColor(suggestion.hex), shape: BoxShape.circle, border: Border.all(color: Colors.black12))),
-          label: Text(s.seeItIn(suggestion.name)),
+          label: Text(s.seeItIn(s.colour(suggestion.name))),
         ),
       ]),
     );

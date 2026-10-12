@@ -14,7 +14,7 @@ import 'platform/platform.dart';
 enum FlowStep { start, face, reveal, shop, compare, body, look }
 
 class EntryParams {
-  const EntryParams({this.pk = 'pk_demo_drape', this.productId, this.colorwayId, this.storeOrigin, this.judgeCode});
+  const EntryParams({this.pk = 'pk_drape', this.productId, this.colorwayId, this.storeOrigin, this.judgeCode});
   final String pk;
   final String? productId;
   final String? colorwayId;
@@ -22,7 +22,7 @@ class EntryParams {
   final String? judgeCode;
 
   factory EntryParams.fromQuery(Map<String, String> q) => EntryParams(
-        pk: q['pk'] ?? 'pk_demo_drape',
+        pk: q['pk'] ?? 'pk_drape',
         productId: q['product'],
         colorwayId: q['colorway'],
         storeOrigin: q['origin'],

@@ -26,6 +26,13 @@ H="authorization: Bearer $T"
 poll() { for i in $(seq 1 40); do s=$(curl -s "$B/v1/jobs/$1" -H "$H" | js 'j.job.status'); [ "$s" = done ] || [ "$s" = error ] && { echo $s; return; }; sleep 1; done; echo timeout; }
 job() { curl -s -X POST $B/v1/sessions/me/jobs -H "$H" -H 'content-type: application/json' -d "$1" | js 'j.job.id'; }
 
+echo "catalogue across stores"
+check "public store list has the two fictional stores" "$(curl -s $B/v1/stores | js 'j.stores.map(s=>s.name).join(",")')" "Layla Boutique,Noor Modest"
+DT=$(curl -s -X POST $B/v1/sessions -H 'content-type: application/json' -d '{"key":"pk_drape","persona":true}' | js 'j.token')
+check "Drape's catalogue lists every store's products" "$(curl -s $B/v1/sessions/me -H "authorization: Bearer $DT" | js 'j.products.map(p=>p.store.name+":"+p.id).sort().join(",")')" "Layla Boutique:kaftan-coat,Noor Modest:abaya-classic,Noor Modest:abaya-everyday"
+check "each product links to where it is sold" "$(curl -s $B/v1/sessions/me -H "authorization: Bearer $DT" | js 'j.products.find(p=>p.id==="kaftan-coat").buyUrl')" "https://layla-boutique.ramy-comm.workers.dev/"
+check "a store's own session lists only its products" "$(curl -s $B/v1/sessions/me -H "$H" | js 'j.products.map(p=>p.id).sort().join(",")')" "abaya-classic,abaya-everyday"
+
 echo "photos"
 check "reading before face photo is refused" "$(curl -s -X POST $B/v1/sessions/me/jobs -H "$H" -H 'content-type: application/json' -d '{"type":"color_reading"}' | js 'j.error.code')" "DRAPE_PHOTO_MISSING"
 check "face upload" "$(curl -s -X POST "$B/v1/sessions/me/photos?kind=face" -H "$H" --data-binary @public/persona/face.jpg | js 'j.session.photos.face!==null')" "true"

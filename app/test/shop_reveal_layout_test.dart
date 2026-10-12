@@ -40,8 +40,8 @@ void main() {
       await tester.pumpWidget(wrap(lang, ShopScreen(app: app)));
       await tester.pump();
       expect(tester.takeException(), isNull);
-      final line = tester.getSize(find.text('Emerald')).height;
-      expect(tester.getSize(find.text('Lavender')).height, line, reason: '"Lavender" wrapped onto a second line');
+      final line = tester.getSize(find.text(S(lang).colour('Emerald'))).height;
+      expect(tester.getSize(find.text(S(lang).colour('Lavender'))).height, line, reason: '"Lavender" wrapped onto a second line');
     });
 
     testWidgets('your colours fits a 360 px phone with both drapes side by side (${lang.name})', (tester) async {
@@ -50,8 +50,8 @@ void main() {
       await tester.pumpWidget(wrap(lang, RevealScreen(app: app)));
       await tester.pump();
       expect(tester.takeException(), isNull);
-      final best = tester.getTopLeft(find.text('Emerald').first);
-      final worst = tester.getTopLeft(find.text('Icy pink').first);
+      final best = tester.getTopLeft(find.text(S(lang).colour('Emerald')).first);
+      final worst = tester.getTopLeft(find.text(S(lang).colour('Icy pink')).first);
       expect((best.dy - worst.dy).abs(), lessThan(4), reason: 'best and worst drapes should be on the same row');
     });
   }

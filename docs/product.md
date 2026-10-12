@@ -14,7 +14,7 @@ Niche: MENA modest fashion, Arabic RTL and English.
 
 | Surface | Ships | Notes |
 |---|---|---|
-| Store button + API (`embed/v1.js`) | yes, primary | one snippet, popup/new tab, never an iframe |
+| Store button + API (`embed/v1.js`) | yes, primary | one snippet, new tab, never an iframe |
 | Buyer web app (hosted URL) | yes | judge persona at 0u + capped live path |
 | Seller console | yes, one page | login required |
 | Synthetic sample store | yes (one) | page source is the working embed example |
@@ -25,7 +25,7 @@ Niche: MENA modest fashion, Arabic RTL and English.
 ## Architecture
 
 ```
- Store page ─ embed/v1.js ─(popup/tab, signed session token)─▶ Buyer web app (Flutter web)
+ Store page ─ embed/v1.js ─(new tab, signed session token)─▶ Buyer web app (Flutter web)
                                                                    │ REST + polling
  Seller console (one account + admin secret key) ────────────────▶ Backend (one long-lived host)
                                                                    ├─ API: /v1/products, /v1/sessions, /v1/sessions/:id/{photos,jobs},

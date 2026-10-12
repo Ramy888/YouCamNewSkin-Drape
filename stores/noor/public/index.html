@@ -102,16 +102,16 @@
   </style>
 </head>
 <body>
-  <div class="demo-bar" role="note"><span class="tag">DEMO STORE</span> Noor Modest is a made-up shop built to demo Drape. Nothing here is for sale.</div>
+  <div class="demo-bar" role="note"><span class="tag">DEMO STORE</span> <span id="demoText">Noor Modest is a made-up shop built to demo Drape. Nothing here is for sale.</span></div>
   <div class="utility">Free delivery over EGP 1,500 · 14-day returns</div>
   <header>
-    <nav aria-label="Shop sections"><a href="#">Abayas</a><a href="#">Hijabs</a><a href="#">Dresses</a><a href="#">New in</a></nav>
-    <a class="brand" href="#">Noor<small>Modest wear</small></a>
+    <nav aria-label="Shop sections" id="nav"><a href="#">Abayas</a><a href="#">Hijabs</a><a href="#">Dresses</a><a href="#">New in</a></nav>
+    <a class="brand" href="#" id="brand">Noor<small>Modest wear</small></a>
     <button class="cart-btn" id="cartBtn" aria-controls="cart" aria-expanded="false">Bag (<span id="count">0</span>)</button>
   </header>
 
   <main>
-    <p class="crumbs">Abayas / Satin</p>
+    <p class="crumbs" id="crumbs">Abayas / Satin</p>
     <div class="gallery"><span class="badge">New season</span><img id="photo" alt="" src=""></div>
     <section aria-labelledby="title">
       <h1 id="title">Classic satin abaya</h1>
@@ -137,7 +137,7 @@
       </div>
       <p class="drape-note">See which colour suits your face before you buy. Your photo is deleted after 24 hours.</p>
 
-      <details open><summary>Details</summary><p>Fluid satin abaya with a contrast piped front, tie belt and long sleeves. Model is 170 cm and wears size 54.</p></details>
+      <details open><summary>Details</summary><p id="details">Fluid satin abaya with a contrast piped front, tie belt and long sleeves. Model is 170 cm and wears size 54.</p></details>
       <details><summary>Delivery and returns</summary><p>Free delivery over EGP 1,500. Returns within 14 days.</p></details>
     </section>
   </main>
@@ -148,12 +148,31 @@
     <button class="add" id="closeCart">Continue shopping</button>
   </aside>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <footer><strong>Demo store.</strong> Noor Modest is fictional · try-on powered by Drape and the YouCam API</footer>
+  <footer><strong>Demo store.</strong> <span id="footerText">Noor Modest is fictional · try-on powered by Drape and the YouCam API</span></footer>
 
   <script>
     (function () {
-      var DRAPE = window.NOOR_CONFIG.drapeHost;
-      var KEY = window.NOOR_CONFIG.drapeKey;
+      // One page template for every fictional demo store; config.js names the store, its product and its colours.
+      var CFG = window.NOOR_CONFIG;
+      var DRAPE = CFG.drapeHost;
+      var KEY = CFG.drapeKey;
+      var STORE = CFG.store || {};
+      var NAME = STORE.name || "Noor Modest";
+      var PRODUCT = STORE.product || "abaya-classic";
+      if (STORE.name) {
+        document.title = NAME + " — " + (STORE.title || "");
+        document.getElementById("brand").innerHTML = "";
+        document.getElementById("brand").append(STORE.short || NAME);
+        var small = document.createElement("small"); small.textContent = STORE.tagline || ""; document.getElementById("brand").append(small);
+        document.getElementById("demoText").textContent = NAME + " is a made-up shop built to demo Drape. Nothing here is for sale.";
+        document.getElementById("footerText").textContent = NAME + " is fictional · try-on powered by Drape and the YouCam API";
+        if (STORE.crumbs) document.getElementById("crumbs").textContent = STORE.crumbs;
+        if (STORE.details) document.getElementById("details").textContent = STORE.details;
+        if (STORE.nav) { var nav = document.getElementById("nav"); nav.innerHTML = ""; STORE.nav.forEach(function (n) { var a = document.createElement("a"); a.href = "#"; a.textContent = n; nav.append(a); }); }
+        document.getElementById("drapeBtn").setAttribute("data-drape-product", PRODUCT);
+        document.getElementById("drapeBtn").setAttribute("data-drape-colorway", STORE.colorway || "");
+      }
+      Object.keys(STORE.theme || {}).forEach(function (k) { document.documentElement.style.setProperty("--" + k, STORE.theme[k]); });
       var product = null, colorway = null, bag = [];
       var $ = function (id) { return document.getElementById(id); };
 
@@ -203,10 +222,10 @@
 
       // A shopper asked for a colour we don't sell yet; Drape also records it for our console.
       document.addEventListener("drape:colour-request", function (e) {
-        toast("Thanks! Noor Modest got your request for " + e.detail.colour.name + ".");
+        toast("Thanks! " + NAME + " got your request for " + e.detail.colour.name + ".");
       });
 
-      fetch(DRAPE + "/v1/products/abaya-classic").then(function (r) { return r.json(); }).then(function (j) {
+      fetch(DRAPE + "/v1/products/" + PRODUCT).then(function (r) { return r.json(); }).then(function (j) {
         product = j.product;
         $("title").textContent = product.name;
         $("price").textContent = "EGP " + product.price.toLocaleString("en");

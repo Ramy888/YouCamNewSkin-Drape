@@ -3,7 +3,8 @@
  *  <script src="https://<drape-host>/embed/v1.js" data-drape-key="pk_demo_drape" async></script>
  *  <button data-drape-product="abaya-classic" data-drape-colorway="emerald" data-drape-lang="en">Try on with Drape</button>
  *
- *  Clicking opens Drape in a popup (never an iframe, so the camera works). When the buyer adds their look,
+ *  Clicking opens Drape in a new tab (never an iframe, so the camera works; a tab keeps the window opener, so the look can
+ *  come back to this page). When the buyer adds their look,
  *  this script fires a `drape:add-to-cart` event on `document` with { sessionId, items, lip }. When the buyer asks the store
  *  to make a garment in a colour it doesn't sell yet, it fires `drape:colour-request` with { sessionId, productId, colour }.
  *  Only messages from the Drape host are accepted.
@@ -40,9 +41,10 @@
 
   function open(btn) {
     var url = flowUrl(btn);
-    var w = window.open(url, "drape", "popup=yes,width=480,height=880");
+    // No window features = a normal tab, not a pop-up. The opener is kept on purpose: the cart hand-off posts back through it.
+    var w = window.open(url, "_blank");
     if (!w) {
-      warn("DRAPE_POPUP_BLOCKED", "The browser blocked the Drape window.", "Drape now opens in a new tab instead.");
+      warn("DRAPE_POPUP_BLOCKED", "The browser blocked the Drape tab.", "Opening it through a link instead.");
       var a = document.createElement("a");
       a.href = url;
       a.target = "_blank";

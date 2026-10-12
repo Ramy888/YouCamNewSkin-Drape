@@ -11,7 +11,10 @@ abstract final class Platform {
   /// Opens the device file picker / camera. Returns the raw bytes, or null if the user cancelled.
   static Future<Uint8List?> pickImage({bool selfie = false}) => impl.pickImage(selfie: selfie);
 
-  /// True when this window was opened by a store page (embed popup) that is still open.
+  /// Opens [url] in a new browser tab (checkout at the store that sells the product).
+  static void openUrl(String url) => impl.openUrl(url);
+
+  /// True when this window was opened by a store page (embed tab) that is still open.
   static bool get hasOpener => impl.hasOpener();
 
   /// Sends [message] to the opener window, only to [targetOrigin] (never "*").

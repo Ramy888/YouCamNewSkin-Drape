@@ -42,7 +42,7 @@ void main() {
     final pick = tester.getCenter(find.byKey(const ValueKey('compare-pick')));
     final off = tester.getCenter(find.byKey(const ValueKey('compare-off')));
     expect(pick.dx, greaterThan(off.dx));
-    expect(find.text('يبرز ألوانك'), findsOneWidget);
+    expect(find.text(S(Lang.ar).liftsYou), findsOneWidget);
   });
 
   testWidgets('verdict copy never talks about skin', (tester) async {

@@ -12,7 +12,7 @@ Built for the YouCam API Skin AI & eCommerce VTO Hackathon (eCommerce VTO track)
 ## 60-second judge path
 
 1. Open the demo shop: **https://noor-modest.ramy-comm.workers.dev** (a fictional store on its own domain).
-2. Click **Try on with Drape** under the abaya. A Drape window opens.
+2. Click **Try on with Drape** under the abaya. Drape opens in a new tab.
 3. Choose **Try with the sample person** (no photo, no sign-up). You'll see:
    - **Your colours** — read from the face photo by Facial Color Tones (warm undertone, gold metal).
    - **Compare** — two colourways of the same abaya on the same body.
@@ -39,7 +39,7 @@ Every call goes through the backend (the API key never reaches the browser). Flo
 ## How it works
 
 ```
- Store page ─ embed/v1.js ─(popup, never an iframe)─▶ Drape web app (Flutter web, /app/)
+ Store page ─ embed/v1.js ─(new tab, never an iframe)─▶ Drape web app (Flutter web, /app/)
                                                           │ REST + polling
  Seller console (/app/#/seller, secret key) ─────────────▶ Cloudflare Worker
                                                           ├─ Durable Object "DrapeState" (SQLite): stores, products, sessions, jobs, unit ledger
@@ -55,12 +55,21 @@ Every call goes through the backend (the API key never reaches the browser). Flo
   When any limit is hit, the buyer sees the labelled sample result instead of an error.
 - **Kill switch:** `FORCE_REPLAY=1`, and three upstream failures in a row (or one auth failure) switch to replay for 30 minutes.
 
+## Drape catalogue (all stores)
+
+Opened directly (https://drape.ramy-comm.workers.dev/app/), Drape is a catalogue of every partner store's products, sorted by what
+suits you, with search and store filters. Try any piece on, then **Buy at {store}** opens that store's page to check out. Demo stores
+are fictional: **Noor Modest** (https://noor-modest.ramy-comm.workers.dev) and **Layla Boutique**
+(https://layla-boutique.ramy-comm.workers.dev), both built from one page template (`stores/noor/public/index.html`, configured by
+each store's `config.js`). Stores integrate with one script tag (below) or the REST API; `GET /v1/stores` lists partner stores.
+
 ## Chrome extension (optional)
 
 On a product page whose link the seller added to Drape, one click on the Drape icon opens Drape for that product.
 The extension uses only the page address (`activeTab` permission; no content scripts, no host access), and CI checks that.
 
 1. Download https://drape.ramy-comm.workers.dev/extension/drape-extension.zip and unzip it (or use the `extension/` folder).
+   Chrome Web Store submission materials are in `docs/chrome-web-store/`.
 2. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked**, pick the folder.
 3. Open the demo shop and click the Drape icon in the toolbar.
 
@@ -108,6 +117,7 @@ The store's origin must be on the allowed list (`ALLOWED_ORIGINS`). Misconfigura
 |---|---|---|---|
 | GET | `/v1/catalog?key=pk_…` | publishable key | published products of a store |
 | GET | `/v1/products/:id` | none | one product (CORS open, public data) |
+| GET | `/v1/stores` | none | partner stores and how many products each has on Drape |
 | GET | `/v1/lookup?url=…` | none | the product whose seller-added listing link matches this page address |
 | POST | `/v1/products` | `Bearer sk_…` | create / update a product and its colorways |
 | PUT | `/v1/products/:id/colorways/:cid/image` | `Bearer sk_…` | upload a colorway image (JPEG/PNG ≤ 10 MB) |

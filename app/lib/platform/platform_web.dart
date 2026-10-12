@@ -72,3 +72,8 @@ bool postToOpener(Map<String, Object?> message, String targetOrigin) {
     return false;
   }
 }
+
+void openUrl(String url) {
+  // A plain new tab: the store page doesn't need (and shouldn't get) a handle back to Drape.
+  web.window.open(url, '_blank', 'noopener');
+}
