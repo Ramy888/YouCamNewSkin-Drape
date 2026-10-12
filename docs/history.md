@@ -1,6 +1,5 @@
 # Drape: planning history (superseded by docs/product.md; do not build from this file)
 
-<!-- /autoplan restore point: "/Users/ramymagdy/.gstack/projects/Developer/no-branch-autoplan-restore-20261010-194857.md" -->
 ## Implementation plan
 # Drape Network: product definition (debate round 3 synthesis, 2026-10-10; pending the owner's approval)
 

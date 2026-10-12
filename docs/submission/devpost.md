@@ -139,8 +139,12 @@ flutter, dart, cloudflare-workers, durable-objects, sqlite, cloudflare-r2, types
 - Second demo store: https://layla-boutique.ramy-comm.workers.dev
 - Drape app: https://drape.ramy-comm.workers.dev/app/
 - Seller console: https://drape.ramy-comm.workers.dev/app/#/seller (sign-in key in the testing instructions)
-- Source code: https://github.com/Ramy888/YouCamNewSkin-Drape
 - Chrome extension: https://drape.ramy-comm.workers.dev/extension/drape-extension.zip
+  **OUTSTANDING:** once the Chrome Web Store listing is live (`docs/chrome-web-store/LISTING.md`), replace this zip link
+  with the store URL in Devpost's public "Try it out" links.
+
+The source code link is **not** a public "Try it out" link (Ramy removed it on 2026-10-13); it lives only in Additional info
+("URL to your code repository"), which is for judges and organizers.
 
 ## Testing instructions (for judges)
 
