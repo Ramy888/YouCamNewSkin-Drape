@@ -4,11 +4,11 @@
   "error": null,
   "results": {
    "color": {
-    "eye_color": "#342724",
+    "eye_color": "#42271d",
     "eye_color_name": "Brown",
-    "lip_color": "#be8782",
-    "eyebrow_color": "#805d47",
-    "skin_color": "#bc9d88",
+    "lip_color": "#c67672",
+    "eyebrow_color": "#3e3834",
+    "skin_color": "#b28d72",
     "hair_color": "#B56637",
     "hair_color_name": "Auburn"
    },

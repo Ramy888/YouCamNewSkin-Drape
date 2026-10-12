@@ -128,11 +128,11 @@ Done (deployed, replay mode):
 - [x] README, MIT licence, CI (typecheck, unit, e2e, secret scan, extension guard)
 - [x] "Not sold yet" (round 5, `docs/debate/r5-verdict.md`): YouCam AI Fabric re-makes her try-on in an opaque palette fabric
   (live only for templates checked for cut and modesty), free "ask the store" requests, seller Colour Demand panel, third product
-- [ ] Replay fixtures for the not-sold beat: persona try-on of the Everyday abaya in navy + Fabric Sea Green Silk (~4u, needs approval)
+- [x] Replay fixtures for the not-sold beat: persona try-on of the Everyday abaya in navy + Fabric Sea Green Silk (2026-10-12)
 
 Waiting for the live switch (needs Ramy's approval, spends units):
 - [x] Persona renders for every catalogue colourway and persona makeup (earrings fail on the sample: ears covered by hair)
-- [ ] Optional: a consented persona photo set (face + full body) to replace the YouCam sample images
+- [x] Synthetic persona (generated face + full body, warm/high) replaces the YouCam sample images: reading, makeup, all 9 colourways, Fabric (41u, 2026-10-12)
 - [x] `YOUCAM_API_KEY` secret set; live with budget 400 via `npm run deploy:live` (config file stays replay)
 
 Open:
