@@ -13,6 +13,7 @@ import { bad, DrapeError, errorResponse } from "./errors";
 import { randomId, sha256Hex, stripJpegMetadata, validateImage } from "./images";
 import { BudgetError, Ledger, migrateLedger, type JobType, type Sql, UNIT_COST } from "./ledger";
 import { linkKeys, validLink } from "./links";
+import { fabricTemplate, FABRICS_VERSION, noColourwaySuits, replayRecolorPath, suggestFabric } from "./fabric";
 import { buildPalette, verdictFor, type Palette } from "./palette";
 import rules from "./palette-rules.json";
 import { earringAsset, earringPayload, LiveYouCam, type Metal, PERSONA_READING, REPLAY_MAKEUP, replayEarringPath, replayTryonPath, type ColorTonesColor, YouCamError } from "./youcam";
@@ -51,7 +52,7 @@ interface SessionRow {
 }
 
 /** Bump when SEED_PRODUCTS changes so deployed stores pick up the new seed catalogue. */
-const SEED_VERSION = "4";
+const SEED_VERSION = "5";
 const SEED_PRODUCTS: Omit<Product, "storeId" | "status">[] = [
   {
     id: "abaya-classic",
@@ -76,6 +77,19 @@ const SEED_PRODUCTS: Omit<Product, "storeId" | "status">[] = [
       { id: "saffron", name: "Saffron", hex: "#deaa4b", image: "/catalog/kaftan-coat_saffron.jpg" },
       { id: "aqua", name: "Aqua", hex: "#4ab8b5", image: "/catalog/kaftan-coat_aqua.jpg" },
       { id: "blush", name: "Blush pink", hex: "#ed9ece", image: "/catalog/kaftan-coat_blush.jpg" },
+    ],
+  },
+  {
+    // Cool-toned colourways only: for a warm buyer nothing here is "Yours", which is where "see it in your colour" starts.
+    id: "abaya-everyday",
+    name: "Everyday satin abaya",
+    category: "full_body",
+    price: 750,
+    currency: "EGP",
+    colorways: [
+      { id: "navy", name: "Navy", hex: "#1f2f5a", image: "/catalog/abaya-everyday_navy.jpg" },
+      { id: "icy-pink", name: "Icy pink", hex: "#f2c8d8", image: "/catalog/abaya-everyday_icy-pink.jpg" },
+      { id: "cool-grey", name: "Cool grey", hex: "#9aa3ad", image: "/catalog/abaya-everyday_cool-grey.jpg" },
     ],
   },
 ];
@@ -108,6 +122,11 @@ export class DrapeState extends DurableObject<Env> {
       status TEXT, result TEXT, error TEXT, ledger_id TEXT, created_at INTEGER, updated_at INTEGER)`);
     this.sql.exec(`CREATE INDEX IF NOT EXISTS jobs_session ON jobs(session_id)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT)`);
+    // Colour demand: kept after sessions are purged. No photos, no visitor ids: product, colour, undertone and whether it
+    // came from the sample-person demo (counted separately so demo clicks never pass as real buyers).
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS demand (id TEXT PRIMARY KEY, store_id TEXT, product_id TEXT, kind TEXT, colour_id TEXT,
+      colour_name TEXT, colour_hex TEXT, verdict TEXT, undertone TEXT, persona INTEGER, session_id TEXT, created_at INTEGER)`);
+    this.sql.exec(`CREATE INDEX IF NOT EXISTS demand_store ON demand(store_id, product_id)`);
   }
 
   // ---------- configuration ----------
@@ -189,6 +208,7 @@ export class DrapeState extends DurableObject<Env> {
     if (p === "/v1/sessions/me/photos" && m === "POST") return this.uploadPhoto(req, url);
     if (p === "/v1/sessions/me/jobs" && m === "POST") return this.createJob(req);
     if (p === "/v1/sessions/me/palette" && m === "POST") return this.paletteOverride(req);
+    if (p === "/v1/sessions/me/requests" && m === "POST") return this.colourRequest(req);
     mm = p.match(/^\/v1\/jobs\/(job_[0-9a-f]+)$/);
     if (mm && m === "GET") return this.getJob(req, mm[1]);
     mm = p.match(/^\/v1\/files\/((?:cat|u|r)\/[A-Za-z0-9_\-/.]+)$/);
@@ -203,6 +223,10 @@ export class DrapeState extends DurableObject<Env> {
       return Response.json({ products: rows.map((r) => this.product(String(r.id), false)) });
     }
     if (p === "/v1/admin/reconcile" && m === "POST") return this.reconcile(req);
+    if (p === "/v1/admin/demand" && m === "GET") {
+      await this.seller(req, { write: false });
+      return Response.json({ products: this.demand("demo") });
+    }
     throw new DrapeError("DRAPE_NOT_FOUND", 404, `No endpoint ${m} ${p}.`, "Check the API reference in the README.");
   }
 
@@ -376,10 +400,12 @@ export class DrapeState extends DurableObject<Env> {
     const palette = this.palette(s);
     const products = this.sql.exec(`SELECT id FROM products WHERE store_id = ? AND status = 'published' ORDER BY id`, s.store_id)
       .map((r) => this.product(String(r.id), true))
-      .map((p) => ({
-        ...p,
-        colorways: p.colorways.map((c) => ({ ...c, ...(palette ? verdictFor(palette, c.hex) : {}) })),
-      }));
+      .map((p) => {
+        const colorways = p.colorways.map((c) => ({ ...c, ...(palette ? verdictFor(palette, c.hex) : {}) }));
+        // Only offered when the catalogue runs out for this buyer, and only with templates checked for cut and modesty.
+        const suggestion = palette && noColourwaySuits(palette, p.colorways.map((c) => c.hex)) ? suggestFabric(palette, { liveOnly: true }) : null;
+        return { ...p, colorways, suggestion };
+      });
     const jobs = this.sql.exec(`SELECT id FROM jobs WHERE session_id = ? ORDER BY created_at`, s.id).map((r) => this.jobView(String(r.id)));
     return {
       id: s.id,
@@ -441,6 +467,7 @@ export class DrapeState extends DurableObject<Env> {
       } while (cursor);
     }
     this.sql.exec(`DELETE FROM jobs WHERE session_id = ?`, id);
+    this.sql.exec(`UPDATE demand SET session_id = NULL WHERE session_id = ?`, id); // counts stay, the link to her session goes
     this.sql.exec(`DELETE FROM sessions WHERE id = ?`, id);
   }
 
@@ -473,9 +500,9 @@ export class DrapeState extends DurableObject<Env> {
 
   private async createJob(req: Request): Promise<Response> {
     const s = await this.session(req);
-    const body = (await req.json().catch(() => ({}))) as { type?: string; productId?: string; colorwayId?: string };
+    const body = (await req.json().catch(() => ({}))) as { type?: string; productId?: string; colorwayId?: string; template?: string };
     const type = body.type as JobType;
-    if (!type || !(type in UNIT_COST)) throw bad("type must be color_reading, tryon, makeup or jewelry.", 'Send {"type":"tryon","productId":"…","colorwayId":"…"}.');
+    if (!type || !(type in UNIT_COST)) throw bad("type must be color_reading, tryon, makeup, jewelry or recolor.", 'Send {"type":"tryon","productId":"…","colorwayId":"…"}.');
     const params: Record<string, string> = {};
     if (type === "tryon") {
       const p = this.product(body.productId ?? "", true);
@@ -483,7 +510,20 @@ export class DrapeState extends DurableObject<Env> {
       if (!cw) throw bad(`Product ${p.id} has no colorway ${body.colorwayId}.`, "Pick one of the product's colorways.");
       params.productId = p.id; params.colorwayId = cw.id; params.category = p.category;
     }
-    if ((type === "makeup" || type === "jewelry") && !s.reading) throw bad("Read your colours first.", `Run a color_reading job before ${type}.`);
+    if (type === "recolor") {
+      // Fabric re-renders the buyer's own try-on of the colourway she would settle for, in a template from her palette.
+      const p = this.product(body.productId ?? "", true);
+      const cw = p.colorways.find((c) => c.id === body.colorwayId);
+      if (!cw) throw bad(`Product ${p.id} has no colorway ${body.colorwayId}.`, "Pick one of the product's colorways.");
+      const t = fabricTemplate(body.template ?? "");
+      if (!t || !t.live) throw bad("That fabric isn't offered.", "Use the suggestion from the session's product view.");
+      const source = this.sql.exec(`SELECT result FROM jobs WHERE session_id = ? AND type = 'tryon' AND status = 'done' AND params = ?`,
+        s.id, JSON.stringify({ productId: p.id, colorwayId: cw.id, category: p.category }))[0];
+      const image = source?.result ? (JSON.parse(String(source.result)) as { image?: string }).image : undefined;
+      if (!image) throw bad("Try this colourway on first.", "Run a tryon job for the same product and colourway, then recolor it.");
+      params.productId = p.id; params.colorwayId = cw.id; params.template = t.id; params.source = image;
+    }
+    if ((type === "makeup" || type === "jewelry" || type === "recolor") && !s.reading) throw bad("Read your colours first.", `Run a color_reading job before ${type}.`);
     if (type === "jewelry") params.metal = this.palette(s)!.metal;
     const live = !!s.live && this.liveAvailable();
     if (live && !s.persona) {
@@ -492,9 +532,14 @@ export class DrapeState extends DurableObject<Env> {
     }
     // Same session + same inputs + same rules = same job. A double tap joins the existing job instead of paying twice.
     const photoKey = type === "tryon" ? s.body_key : s.face_key;
-    const dedupe = await sha256Hex([s.id, type, photoKey ?? "persona", JSON.stringify(params), type === "makeup" ? s.reading + "|" + s.override : "", rules.version, live ? "live" : "replay"].join("|"));
+    const dedupe = await sha256Hex([s.id, type, photoKey ?? "persona", JSON.stringify(params), type === "makeup" ? s.reading + "|" + s.override : "", rules.version, FABRICS_VERSION, live ? "live" : "replay"].join("|"));
     const existing = this.sql.exec(`SELECT id FROM jobs WHERE dedupe = ? AND status != 'error'`, dedupe)[0];
     if (existing) return Response.json({ job: this.jobView(String(existing.id)), joined: true });
+    // One paid "see it in your colour" render per live session; the request itself is free and unlimited.
+    if (type === "recolor" && live && !s.persona && this.sql.exec(`SELECT 1 FROM jobs WHERE session_id = ? AND type = 'recolor' AND status != 'error'`, s.id).length) {
+      throw new DrapeError("DRAPE_BUDGET_EXHAUSTED", 429, "You've already seen one colour the store doesn't sell yet.", "You can still ask the store for any colour.");
+    }
+    if (type === "tryon") this.recordTried(s, params.productId, params.colorwayId);
 
     const id = randomId("job_", 12);
     const now = Date.now();
@@ -539,6 +584,12 @@ export class DrapeState extends DurableObject<Env> {
         return;
       }
       this.finish(id, "done", { image: rec, sample: !!sample, note });
+      return;
+    }
+    if (type === "recolor") {
+      const rec = await this.recorded(replayRecolorPath(params.productId, params.colorwayId, params.template));
+      if (rec) this.finish(id, "done", { image: rec, template: params.template, sample: !!sample, note });
+      else this.finish(id, "error", null, { kind: "unavailable", message: "This colour preview isn't recorded in demo mode.", retryable: false });
       return;
     }
     if (type === "jewelry") {
@@ -614,6 +665,11 @@ export class DrapeState extends DurableObject<Env> {
         ]);
         const out = await yc.run("cloth-v4", { src_file_id: src, ref_file_id: ref, garment_category: job.params.category });
         result = { image: await this.saveResult(s.id, out.image) };
+      } else if (job.type === "recolor") {
+        const src = await this.bytesOf(job.params.source);
+        const fileId = await yc.upload("fabric", { ...src, name: "tryon.jpg" });
+        const out = await yc.run("fabric", { src_file_id: fileId, template_id: job.params.template });
+        result = { image: await this.saveResult(s.id, out.image), template: job.params.template };
       } else if (job.type === "jewelry") {
         const metal = job.params.metal as Metal;
         const [face, earring] = await Promise.all([this.bytesOf(`/v1/files/${s.face_key}`), this.bytesOf(earringAsset(metal))]);
@@ -663,6 +719,68 @@ export class DrapeState extends DurableObject<Env> {
       this.setKv("force_replay_until", String(Date.now() + 30 * 60 * 1000));
       console.log(JSON.stringify({ level: "error", event: "force_replay", reason: auth ? "auth" : "upstream_errors" }));
     }
+  }
+
+  // ---------- colour demand ----------
+
+  /** Sample person, or a visitor whose session ran on recorded results: counted apart from real buyers. */
+  private isDemo(s: SessionRow): number {
+    return s.persona || !(s.live && this.liveAvailable()) ? 1 : 0;
+  }
+
+  private recordTried(s: SessionRow, productId: string, colorwayId: string) {
+    const palette = this.palette(s);
+    if (!palette) return;
+    const cw = this.product(productId, true).colorways.find((c) => c.id === colorwayId)!;
+    this.sql.exec(`INSERT INTO demand (id, store_id, product_id, kind, colour_id, colour_name, colour_hex, verdict, undertone, persona, session_id, created_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, randomId("dm_", 10), s.store_id, productId, "tried", cw.id, cw.name, cw.hex,
+      verdictFor(palette, cw.hex).verdict, palette.undertone, this.isDemo(s), s.id, Date.now());
+  }
+
+  /** "Ask the store to make it in this colour": free, no photo involved, one row per session × product × colour. */
+  private async colourRequest(req: Request): Promise<Response> {
+    const s = await this.session(req);
+    const body = (await req.json().catch(() => ({}))) as { productId?: string; template?: string };
+    const p = this.product(body.productId ?? "", true);
+    const t = fabricTemplate(body.template ?? "");
+    if (!t) throw bad("Unknown colour.", "Use the suggestion from the session's product view.");
+    const palette = this.palette(s);
+    if (!palette) throw bad("Read your colours first.", "Run a color_reading job before asking for a colour.");
+    const already = this.sql.exec(`SELECT 1 FROM demand WHERE session_id = ? AND product_id = ? AND kind = 'requested' AND colour_id = ?`, s.id, p.id, t.id).length > 0;
+    if (!already) {
+      this.sql.exec(`INSERT INTO demand (id, store_id, product_id, kind, colour_id, colour_name, colour_hex, verdict, undertone, persona, session_id, created_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, randomId("dm_", 10), s.store_id, p.id, "requested", t.id, t.name, t.hex, "yours", palette.undertone, this.isDemo(s), s.id, Date.now());
+    }
+    return Response.json({ request: { productId: p.id, template: t.id, colour: t.name, hex: t.hex }, alreadyAsked: already }, { status: already ? 200 : 201 });
+  }
+
+  /** Per product: what buyers tried, which colours the palette told them to avoid, and what they asked for. Counts only. */
+  private demand(storeId: string) {
+    const rows = this.sql.exec(`SELECT product_id, kind, colour_id, colour_name, colour_hex, verdict, undertone, persona, COUNT(*) AS n
+      FROM demand WHERE store_id = ? GROUP BY product_id, kind, colour_id, verdict, undertone, persona`, storeId);
+    const products = this.sql.exec(`SELECT id FROM products WHERE store_id = ? ORDER BY id`, storeId).map((r) => this.product(String(r.id), false));
+    return products.map((p) => {
+      const mine = rows.filter((r) => r.product_id === p.id);
+      const count = (kind: string, demo: boolean, verdict?: string) =>
+        mine.filter((r) => r.kind === kind && !!r.persona === demo && (!verdict || r.verdict === verdict)).reduce((a, r) => a + Number(r.n), 0);
+      const colours = (kind: string, verdict?: string) => {
+        const by = new Map<string, { id: string; name: string; hex: string; buyers: number; demo: number; undertones: Record<string, number> }>();
+        for (const r of mine.filter((r) => r.kind === kind && (!verdict || r.verdict === verdict))) {
+          const k = String(r.colour_id);
+          const e = by.get(k) ?? { id: k, name: String(r.colour_name), hex: String(r.colour_hex), buyers: 0, demo: 0, undertones: {} };
+          if (r.persona) e.demo += Number(r.n);
+          else { e.buyers += Number(r.n); e.undertones[String(r.undertone)] = (e.undertones[String(r.undertone)] ?? 0) + Number(r.n); }
+          by.set(k, e);
+        }
+        return [...by.values()].sort((a, b) => b.buyers - a.buyers || b.demo - a.demo);
+      };
+      return {
+        id: p.id, name: p.name,
+        tried: { buyers: count("tried", false), demo: count("tried", true) },
+        avoided: colours("tried", "avoid"),
+        requested: colours("requested"),
+      };
+    });
   }
 
   private async reconcile(req: Request): Promise<Response> {

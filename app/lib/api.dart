@@ -99,8 +99,24 @@ class Colorway {
       );
 }
 
+/// A colour the store doesn't sell yet, from the buyer's palette: a YouCam AI Fabric template the palette rates "yours".
+class FabricSuggestion {
+  FabricSuggestion({required this.template, required this.name, required this.hex, required this.closest});
+  final String template;
+  final String name;
+  final String hex;
+  final Swatch closest;
+
+  factory FabricSuggestion.fromJson(Map<String, dynamic> j) => FabricSuggestion(
+        template: '${j['template']}',
+        name: '${j['name']}',
+        hex: '${j['hex']}',
+        closest: Swatch.fromJson((j['closest'] as Map).cast<String, dynamic>()),
+      );
+}
+
 class Product {
-  Product({required this.id, required this.name, required this.category, required this.price, required this.currency, required this.colorways, this.links = const []});
+  Product({required this.id, required this.name, required this.category, required this.price, required this.currency, required this.colorways, this.links = const [], this.suggestion});
   final String id;
   final String name;
   final String category;
@@ -111,6 +127,9 @@ class Product {
   /// Product page URLs on other stores; the Drape extension matches the page address against these.
   final List<String> links;
 
+  /// Set when none of the colourways suit this buyer.
+  final FabricSuggestion? suggestion;
+
   factory Product.fromJson(Map<String, dynamic> j) => Product(
         id: '${j['id']}',
         name: '${j['name']}',
@@ -119,6 +138,7 @@ class Product {
         currency: '${j['currency'] ?? 'EGP'}',
         colorways: [for (final c in (j['colorways'] as List)) Colorway.fromJson((c as Map).cast<String, dynamic>())],
         links: [for (final l in (j['links'] as List? ?? const [])) '$l'],
+        suggestion: j['suggestion'] is Map ? FabricSuggestion.fromJson((j['suggestion'] as Map).cast<String, dynamic>()) : null,
       );
 
   Map<String, dynamic> toJson() => {
@@ -150,6 +170,9 @@ class Job {
   String? get errorCode => error?['code'] as String?;
   String get errorMessage => '${error?['message'] ?? 'Something went wrong.'}';
   bool get retryable => error?['retryable'] == true;
+
+  /// Stand-in for a render that can't be shown (its source failed): the panel falls back to the colour itself.
+  factory Job.unavailable() => Job(id: '', type: 'recolor', status: 'error', params: const {}, error: const {'kind': 'unavailable', 'retryable': false});
 
   factory Job.fromJson(Map<String, dynamic> j) => Job(
         id: '${j['id']}',
@@ -257,9 +280,9 @@ class DrapeApi {
     return Session.fromJson((j['session'] as Map).cast<String, dynamic>());
   }
 
-  Future<Job> createJob(String type, {String? productId, String? colorwayId}) async {
+  Future<Job> createJob(String type, {String? productId, String? colorwayId, String? template}) async {
     final j = await _send(_client.post(_u('/v1/sessions/me/jobs'),
-        headers: _headers(), body: jsonEncode({'type': type, 'productId': ?productId, 'colorwayId': ?colorwayId})));
+        headers: _headers(), body: jsonEncode({'type': type, 'productId': ?productId, 'colorwayId': ?colorwayId, 'template': ?template})));
     return Job.fromJson((j['job'] as Map).cast<String, dynamic>());
   }
 
@@ -295,6 +318,19 @@ class DrapeApi {
     final j = await _send(_client.put(_u('/v1/products/$productId/colorways/$colorwayId/image'),
         headers: {..._headers(json: false, seller: true), 'content-type': 'image/jpeg'}, body: bytes));
     return Product.fromJson((j['product'] as Map).cast<String, dynamic>());
+  }
+
+  /// Ask the store to make [productId] in a colour it doesn't sell yet. Free; returns true if this session had already asked.
+  Future<bool> requestColour(String productId, String template) async {
+    final j = await _send(_client.post(_u('/v1/sessions/me/requests'),
+        headers: _headers(), body: jsonEncode({'productId': productId, 'template': template})));
+    return j['alreadyAsked'] == true;
+  }
+
+  /// Seller: per product, what buyers tried, which colours their palette rejected, and what they asked for.
+  Future<List<Map<String, dynamic>>> demand() async {
+    final j = await _send(_client.get(_u('/v1/admin/demand'), headers: _headers(seller: true)));
+    return [for (final p in (j['products'] as List)) (p as Map).cast<String, dynamic>()];
   }
 
   Future<Map<String, dynamic>> ledger() => _send(_client.get(_u('/v1/admin/ledger'), headers: _headers(seller: true)));

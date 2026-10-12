@@ -1,0 +1,72 @@
+{
+  "version": "2026-10-12.1",
+  "comment": "YouCam AI Fabric templates Drape may offer as 'see it in your colour'. Opaque fabrics only: the gate test (docs/derisk, 2026-10-12) showed sheer templates (organza) turn an abaya into a crop top and skirt. 'live: true' only for templates whose render was checked to keep the garment's cut and modesty; hex is the measured garment colour (from the real render where live, else the template thumbnail).",
+  "templates": [
+    {
+      "id": "full_body_sea_green_silk",
+      "name": "Sea Green Silk",
+      "hex": "#0b6d6f",
+      "live": true
+    },
+    {
+      "id": "full_body_blue_wool",
+      "name": "Blue Wool",
+      "hex": "#b3c2cd",
+      "live": true
+    },
+    {
+      "id": "full_body_green_velvet",
+      "name": "Green Velvet",
+      "hex": "#0f3630",
+      "live": false
+    },
+    {
+      "id": "full_body_red_silk",
+      "name": "Red Silk",
+      "hex": "#691010",
+      "live": false
+    },
+    {
+      "id": "full_body_red_velvet",
+      "name": "Red Velvet",
+      "hex": "#601b21",
+      "live": false
+    },
+    {
+      "id": "full_body_beige_linen",
+      "name": "Beige Linen",
+      "hex": "#bbb6b1",
+      "live": false
+    },
+    {
+      "id": "full_body_grey_cotton",
+      "name": "Grey Cotton",
+      "hex": "#9b9a9e",
+      "live": false
+    },
+    {
+      "id": "full_body_pink_cotton",
+      "name": "Pink Cotton",
+      "hex": "#bf759c",
+      "live": false
+    },
+    {
+      "id": "full_body_mint_green_wool",
+      "name": "Mint Green Wool",
+      "hex": "#a3b8b1",
+      "live": false
+    },
+    {
+      "id": "full_body_smokey_green_cotton",
+      "name": "Smokey Green Cotton",
+      "hex": "#82b2a5",
+      "live": false
+    },
+    {
+      "id": "full_body_black_cotton",
+      "name": "Black Cotton",
+      "hex": "#0b0b0b",
+      "live": false
+    }
+  ]
+}

@@ -4,7 +4,8 @@
  *  <button data-drape-product="abaya-classic" data-drape-colorway="emerald" data-drape-lang="en">Try on with Drape</button>
  *
  *  Clicking opens Drape in a popup (never an iframe, so the camera works). When the buyer adds their look,
- *  this script fires a `drape:add-to-cart` event on `document` with { sessionId, items, lip }.
+ *  this script fires a `drape:add-to-cart` event on `document` with { sessionId, items, lip }. When the buyer asks the store
+ *  to make a garment in a colour it doesn't sell yet, it fires `drape:colour-request` with { sessionId, productId, colour }.
  *  Only messages from the Drape host are accepted.
  */
 (function () {
@@ -70,8 +71,12 @@
   window.addEventListener("message", function (e) {
     if (e.origin !== HOST) return;
     var d = e.data;
-    if (!d || d.type !== "drape:add-to-cart" || !Array.isArray(d.items)) return;
-    document.dispatchEvent(new CustomEvent("drape:add-to-cart", { detail: { sessionId: d.sessionId, items: d.items, lip: d.lip || null } }));
+    if (!d) return;
+    if (d.type === "drape:add-to-cart" && Array.isArray(d.items)) {
+      document.dispatchEvent(new CustomEvent("drape:add-to-cart", { detail: { sessionId: d.sessionId, items: d.items, lip: d.lip || null } }));
+    } else if (d.type === "drape:colour-request" && d.colour && typeof d.colour.name === "string") {
+      document.dispatchEvent(new CustomEvent("drape:colour-request", { detail: { sessionId: d.sessionId, productId: d.productId, colour: d.colour } }));
+    }
   });
 
   function init() {

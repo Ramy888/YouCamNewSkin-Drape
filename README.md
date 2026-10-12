@@ -3,7 +3,9 @@
 Drape is a **"Try on with Drape"** button that modest-fashion stores add to their product pages.
 One face photo is read by the **YouCam Facial Color Tones API**. Drape then shows the colourway that fights your colouring
 next to the one that suits it, **on your own body** (YouCam **Clothes VTO**), finishes the look with a matching lip shade
-(YouCam **Makeup VTO**) and earrings in the right metal (YouCam **Earrings VTO**), and hands the bundle back to the store's cart. English and Arabic (RTL).
+(YouCam **Makeup VTO**) and earrings in the right metal (YouCam **Earrings VTO**), and hands the bundle back to the store's cart.
+When none of a garment's colours suit her, YouCam **AI Fabric** re-makes her own try-on in a fabric from her palette, "not sold yet",
+and she can ask the store to make it; the seller sees that demand in the console. English and Arabic (RTL).
 
 Built for the YouCam API Skin AI & eCommerce VTO Hackathon (eCommerce VTO track).
 
@@ -29,6 +31,7 @@ labelled sample result instead of an error. See [Live mode](#live-mode).
 | Compare + try-on | AI Clothes VTO v4 | `cloth-v4` | 2 per render | the chosen product colourway on the buyer's full-body photo (`full_body`, `upper_body`, `outer`) |
 | Complete the look | AI Makeup VTO | `makeup-vto` | 1 | lip colour from the palette on the face photo |
 | Complete the look | AI Earrings VTO (2D) | `2d-vto/earring` | 1 | an earring in the palette metal (gold, silver or rose gold) on the face photo |
+| Not sold yet | AI Fabric | `fabric` | 2 (one per session) | her try-on re-made in an opaque fabric template the palette rates "yours" (only templates checked to keep the cut and modesty) |
 
 Every call goes through the backend (the API key never reaches the browser). Flow per call: `POST /file/<task>` → `PUT` bytes →
 `POST /task/<task>` → poll `GET /task/<task>/<id>` → copy the result into our storage (YouCam deletes results after 24h).
@@ -111,8 +114,10 @@ The store's origin must be on the allowed list (`ALLOWED_ORIGINS`). Misconfigura
 | POST | `/v1/sessions` | publishable key in body | start a buyer session `{key, storeOrigin, persona?}` → `{token, session}` |
 | GET / DELETE | `/v1/sessions/me` | `Bearer <token>` | session state / delete everything for this session |
 | POST | `/v1/sessions/me/photos?kind=face\|body` | token | upload a photo (raw bytes) |
-| POST | `/v1/sessions/me/jobs` | token | `{type: color_reading \| tryon \| makeup \| jewelry, productId?, colorwayId?}` → job |
+| POST | `/v1/sessions/me/jobs` | token | `{type: color_reading \| tryon \| makeup \| jewelry \| recolor, productId?, colorwayId?, template?}` → job |
 | GET | `/v1/jobs/:id` | token | job status and result |
+| POST | `/v1/sessions/me/requests` | token | `{productId, template}`: ask the store for a colour it doesn't sell (free) |
+| GET | `/v1/admin/demand` | `Bearer sk_…` | per product: tried, told "fights your colouring", requested (real buyers and demo counted apart) |
 | POST | `/v1/sessions/me/palette` | token | `{override: "warmer" \| "cooler" \| null}` (0 units) |
 | GET | `/v1/admin/products` | `Bearer sk_…` | all products, including drafts and disabled ones |
 | GET | `/v1/admin/ledger` | `Bearer sk_…` | unit ledger summary and `role` (`owner` or `judge`) |

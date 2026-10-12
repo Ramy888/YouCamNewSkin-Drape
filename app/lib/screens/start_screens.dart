@@ -157,7 +157,7 @@ class CaptureScreen extends StatelessWidget {
                   await app.readColours();
                 } else {
                   final p = app.product;
-                  if (p != null) await app.openCompare(p, colorwayId: app.chosenColorwayId);
+                  if (p != null) await (app.notSold ? app.openRecolor(p) : app.openCompare(p, colorwayId: app.chosenColorwayId));
                 }
               },
               label: Text(s.takePhoto),

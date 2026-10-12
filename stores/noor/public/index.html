@@ -201,6 +201,11 @@
         renderBag(); openCart(true); toast("Your Drape look is in your bag");
       });
 
+      // A shopper asked for a colour we don't sell yet; Drape also records it for our console.
+      document.addEventListener("drape:colour-request", function (e) {
+        toast("Thanks! Noor Modest got your request for " + e.detail.colour.name + ".");
+      });
+
       fetch(DRAPE + "/v1/products/abaya-classic").then(function (r) { return r.json(); }).then(function (j) {
         product = j.product;
         $("title").textContent = product.name;

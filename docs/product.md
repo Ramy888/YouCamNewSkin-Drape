@@ -126,6 +126,9 @@ Done (deployed, replay mode):
 - [x] Flutter web app: capture, hijab-drape reveal, shop with verdicts, Compare, makeup + earrings, look card, Arabic RTL, seller console
 - [x] Earrings VTO (2D) in the palette metal; listing links + `/v1/lookup`; URL-only Chrome extension (activeTab only)
 - [x] README, MIT licence, CI (typecheck, unit, e2e, secret scan, extension guard)
+- [x] "Not sold yet" (round 5, `docs/debate/r5-verdict.md`): YouCam AI Fabric re-makes her try-on in an opaque palette fabric
+  (live only for templates checked for cut and modesty), free "ask the store" requests, seller Colour Demand panel, third product
+- [ ] Replay fixtures for the not-sold beat: persona try-on of the Everyday abaya in navy + Fabric Sea Green Silk (~4u, needs approval)
 
 Waiting for the live switch (needs Ramy's approval, spends units):
 - [x] Persona renders for every catalogue colourway and persona makeup (earrings fail on the sample: ears covered by hair)

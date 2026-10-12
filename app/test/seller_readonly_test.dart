@@ -23,6 +23,16 @@ DrapeApi fakeApi(String role) => DrapeApi(
                 },
               ],
             },
+          '/v1/admin/demand' => {
+              'products': [
+                {
+                  'id': 'abaya-everyday', 'name': 'Everyday satin abaya',
+                  'tried': {'buyers': 2, 'demo': 3},
+                  'avoided': [{'id': 'icy-pink', 'name': 'Icy pink', 'hex': '#f2c8d8', 'buyers': 1, 'demo': 2, 'undertones': {'warm': 1}}],
+                  'requested': [{'id': 'full_body_sea_green_silk', 'name': 'Sea Green Silk', 'hex': '#0b6d6f', 'buyers': 2, 'demo': 1, 'undertones': {'warm': 2}}],
+                },
+              ],
+            },
           _ => {'error': {'code': 'DRAPE_NOT_FOUND', 'message': 'no', 'fix': ''}},
         };
         return http.Response(jsonEncode(body), 200, headers: {'content-type': 'application/json'});

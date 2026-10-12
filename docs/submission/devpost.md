@@ -39,6 +39,10 @@ Drape is a button a store adds to its product pages. When a buyer clicks **Try o
 4. **Complete the look.** **YouCam AI Makeup VTO** puts the matching lip shade on the face photo, and **YouCam Earrings VTO** shows an
    earring in the palette metal (gold, silver or rose gold).
 5. **Add the look to cart.** The bundle goes back to the store's own cart through a browser event; Drape never takes the checkout.
+6. **Not sold yet.** When none of a garment's colours suit her, **YouCam AI Fabric** re-makes her own try-on in a fabric her palette
+   rates "yours" (for example Sea Green Silk, close to her Deep teal), beside the colour she would settle for. She taps **Ask the
+   store to make it**, and the seller's console counts that demand: colours tried, colours the palette rejected, colours requested,
+   with demo sessions counted apart from real buyers. Stores learn which colour to make before they make it.
 
 Around the buyer flow:
 
@@ -64,9 +68,9 @@ Around the buyer flow:
   an error, and repeated upstream failures switch the app to recorded results for 30 minutes.
 - **Embed:** one script tag plus a `data-drape-product` button. Drape opens in a popup (never an iframe) and returns the cart with a
   `postMessage` bound to the store's origin.
-- **Tests:** 53 backend unit tests (palette, ledger, adapter, links), a 32-check end-to-end test of the live path against a mock
-  YouCam server (including the view-only judge key), and 30 Flutter tests (including right-to-left layout, phone-width and
-  view-only console checks). CI also scans for secrets and checks
+- **Tests:** 58 backend unit tests (palette, ledger, adapter, links, fabric choice), a 49-check end-to-end test of the live path against a mock
+  YouCam server (including the view-only judge key and the Fabric limits), and 62 Flutter tests (right-to-left layout, phone,
+  tablet and laptop sizes, view-only console, not-sold flow). CI also scans for secrets and checks
   that a fresh clone makes zero calls to YouCam.
 
 ## YouCam APIs used
@@ -77,6 +81,7 @@ Around the buyer flow:
 | Compare and try-on | AI Clothes VTO v4 | `cloth-v4` (`full_body`, `outer`, `upper_body`) | 2 per render |
 | Complete the look | AI Makeup VTO | `makeup-vto` (lip colour) | 1 |
 | Complete the look | AI Earrings VTO | `2d-vto/earring` | 1 |
+| Not sold yet | AI Fabric | `fabric` (opaque templates checked for cut and modesty) | 2, one per session |
 
 A new buyer costs about 26 units; a returning buyer about 4–6.
 
@@ -90,12 +95,15 @@ A new buyer costs about 26 units; a returning buyer about 4–6.
   "earlobe alignment not confident", so we map it to a friendly message and keep showing the palette metal.
 - **Being judged on a quota.** Judges must be able to test until Nov 20 without the demo breaking. The answer was the unit ledger with
   caps, a sample-person path that costs nothing, and an automatic fallback to recorded results.
+- **A fabric API that can undress a modest garment.** AI Fabric only offers fixed templates and re-renders the whole outfit. Our gate
+  test showed a sheer template (organza) turned an abaya into a crop top and skirt, while silk and wool kept the cut. Drape only offers
+  opaque templates, picks them with the same palette engine (never one rated "avoid"), and in live mode only those whose render we checked.
 - **Saying "no" kindly.** The product tells people a colour does not suit them. The copy rules are strict: judge the garment, never the
   skin; every "no" comes with a better "yes"; never describe the buyer as dark, light or fair. A test checks the verdict copy for it.
 
 ## Accomplishments that we're proud of
 
-- One face reading drives four YouCam APIs and a real buying decision, not a gallery of effects.
+- One face reading drives five YouCam APIs and a real buying decision, not a gallery of effects.
 - The "rejected colour beside the approved one, on your own body" comparison makes the value obvious in a few seconds.
 - It plugs into an existing store with one script tag and hands back to the store's own cart.
 - Arabic right-to-left is a first-class layout, not a translation pass: the approved colour sits on the reading-start side in both languages.
@@ -153,6 +161,10 @@ fails.
 3. Each visitor gets one new face reading per day. If the shared judging budget runs out, Drape shows the labelled sample result
    instead of an error.
 4. **Delete my photos** removes everything immediately; otherwise photos are deleted after 24 hours.
+
+**Path D: not sold yet (YouCam AI Fabric).** With the sample person, open Shop your colours, scroll to "Everyday satin abaya" (none
+of its colours suit her), tap **See it in Sea Green Silk**, then **Ask the store to make it**. The request appears in the seller
+console under Colour demand, counted as demo.
 
 **Seller console (view-only judge access):** https://drape.ramy-comm.workers.dev/app/#/seller. The judge key is given in the
 Devpost "Additional info" (judges only) and is kept out of this public repository. It shows everything; saving, uploads and unit

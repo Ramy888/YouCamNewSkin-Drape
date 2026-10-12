@@ -25,6 +25,11 @@ class _SellerScreenState extends State<SellerScreen> {
   final _key = TextEditingController();
   List<Product> _products = [];
   Map<String, dynamic>? _ledger;
+  List<Map<String, dynamic>> _demand = [];
+
+  /// A requested colour the seller chose to add: the editor opens with a new colourway row holding its name and hex
+  /// (never the buyer's render: that image shows her body). The seller uploads a real product photo for it.
+  ({String name, String hex})? _prefill;
   Product? _selected;
   ApiError? _error;
   String? _status;
@@ -67,6 +72,7 @@ class _SellerScreenState extends State<SellerScreen> {
   Future<void> _refresh() => _act(() async {
         _ledger = await widget.api.ledger();
         _products = await widget.api.catalog(widget.publishableKey);
+        _demand = await widget.api.demand();
         if (_selected != null) _selected = _products.where((p) => p.id == _selected!.id).firstOrNull ?? _selected;
       });
 
@@ -224,6 +230,15 @@ class _SellerScreenState extends State<SellerScreen> {
         ),
       ],
       const SizedBox(height: 32),
+      _DemandPanel(
+        demand: _demand,
+        readOnly: _readOnly,
+        onAdd: (productId, name, hex) => setState(() {
+          _selected = _products.where((p) => p.id == productId).firstOrNull;
+          _prefill = (name: name, hex: hex);
+        }),
+      ),
+      const SizedBox(height: 32),
       Text('Catalogue', style: t.headlineSmall),
       const SizedBox(height: 16),
       LayoutBuilder(builder: (context, c) {
@@ -231,8 +246,9 @@ class _SellerScreenState extends State<SellerScreen> {
         final editor = DrapeCard(
           padding: const EdgeInsets.all(24),
           child: _ProductEditor(
-            key: ValueKey(_selected?.id ?? 'new'),
+            key: ValueKey('${_selected?.id ?? 'new'}|${_prefill?.hex ?? ''}'),
             product: _selected,
+            prefill: _prefill,
             busy: _busy,
             readOnly: _readOnly,
             onSave: (json) => _act(() async {
@@ -298,12 +314,18 @@ class _SellerScreenState extends State<SellerScreen> {
                     Flexible(child: Text(p.category, style: t.bodySmall, overflow: TextOverflow.ellipsis)),
                   ]),
                 ),
-                onTap: () => setState(() => _selected = p),
+                onTap: () => setState(() {
+                  _selected = p;
+                  _prefill = null;
+                }),
               ),
             ),
           Padding(
             padding: const EdgeInsets.all(8),
-            child: OutlinedButton.icon(onPressed: _readOnly ? null : () => setState(() => _selected = null), icon: const Icon(Icons.add_rounded), label: const Text('New product')),
+            child: OutlinedButton.icon(onPressed: _readOnly ? null : () => setState(() {
+                _selected = null;
+                _prefill = null;
+              }), icon: const Icon(Icons.add_rounded), label: const Text('New product')),
           ),
         ]),
       );
@@ -337,6 +359,79 @@ class _Kpi extends StatelessWidget {
   }
 }
 
+/// What buyers did with each product: tried it, were told a colour fights them, asked for a colour the store doesn't sell.
+/// Counts only, from real events; sample-person and demo-mode sessions are shown apart so they never pass as buyers.
+class _DemandPanel extends StatelessWidget {
+  const _DemandPanel({required this.demand, required this.readOnly, required this.onAdd});
+  final List<Map<String, dynamic>> demand;
+  final bool readOnly;
+  final void Function(String productId, String name, String hex) onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    final rows = demand.where((p) => (p['tried']['buyers'] as int) + (p['tried']['demo'] as int) > 0 || (p['requested'] as List).isNotEmpty).toList();
+    String counts(Map c) => [
+          if ((c['buyers'] as int) > 0) '${c['buyers']} buyer${c['buyers'] == 1 ? '' : 's'}',
+          if ((c['demo'] as int) > 0) '${c['demo']} demo',
+        ].join(' · ');
+    Widget dot(String hex) => Container(width: 16, height: 16, decoration: BoxDecoration(color: hexColor(hex), shape: BoxShape.circle, border: Border.all(color: Colors.black12)));
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text('Colour demand', style: t.headlineSmall),
+      const SizedBox(height: 4),
+      Text('What shoppers asked for that you don’t sell yet, and the colours their palette told them to skip.', style: t.bodyMedium),
+      const SizedBox(height: 16),
+      if (rows.isEmpty)
+        const DrapeCard(child: Text('No try-ons yet. Requests appear here as soon as a shopper asks for a colour.'))
+      else
+        for (final p in rows) ...[
+          DrapeCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Wrap(spacing: 12, runSpacing: 4, alignment: WrapAlignment.spaceBetween, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                Text('${p['name']}', style: t.titleMedium),
+                Text('Tried: ${counts(p['tried'] as Map).isEmpty ? '0' : counts(p['tried'] as Map)}', style: t.bodySmall),
+              ]),
+              if ((p['requested'] as List).isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text('ASKED FOR, NOT SOLD YET', style: t.labelMedium?.copyWith(color: Tone.mulberry)),
+                const SizedBox(height: 6),
+                for (final r in (p['requested'] as List).cast<Map>())
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Wrap(spacing: 10, runSpacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                      dot('${r['hex']}'),
+                      Text('${r['name']}', style: t.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+                      Text(counts(r), style: t.bodyMedium),
+                      for (final u in (r['undertones'] as Map).entries) Tag(text: '${u.key} ${u.value}', color: Tone.inkSoft, bg: Tone.paperDeep),
+                      TextButton.icon(
+                        onPressed: readOnly ? null : () => onAdd('${p['id']}', '${r['name']}', '${r['hex']}'),
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: const Text('Add as colourway'),
+                      ),
+                    ]),
+                  ),
+              ],
+              if ((p['avoided'] as List).isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text('TOLD “FIGHTS YOUR COLOURING”', style: t.labelMedium),
+                const SizedBox(height: 6),
+                Wrap(spacing: 14, runSpacing: 6, children: [
+                  for (final a in (p['avoided'] as List).cast<Map>())
+                    Row(mainAxisSize: MainAxisSize.min, children: [
+                      dot('${a['hex']}'),
+                      const SizedBox(width: 6),
+                      Flexible(child: Text('${a['name']} · ${counts(a)}', style: t.bodyMedium)),
+                    ]),
+                ]),
+              ],
+            ]),
+          ),
+          const SizedBox(height: 12),
+        ],
+    ]);
+  }
+}
+
 class _ErrorStrip extends StatelessWidget {
   const _ErrorStrip({required this.error});
   final ApiError error;
@@ -366,7 +461,8 @@ class _CwRow {
 }
 
 class _ProductEditor extends StatefulWidget {
-  const _ProductEditor({super.key, required this.product, required this.busy, this.readOnly = false, required this.onSave, required this.onUpload, required this.api});
+  const _ProductEditor({super.key, required this.product, required this.busy, this.readOnly = false, this.prefill, required this.onSave, required this.onUpload, required this.api});
+  final ({String name, String hex})? prefill;
   final Product? product;
   final bool busy;
   final bool readOnly;
@@ -395,6 +491,9 @@ class _ProductEditorState extends State<_ProductEditor> {
   late final List<_CwRow> _rows = [
     for (final c in widget.product?.colorways ?? <Colorway>[])
       _CwRow(TextEditingController(text: c.id), TextEditingController(text: c.name), TextEditingController(text: c.hex), c.image),
+    if (widget.prefill case final f?)
+      _CwRow(TextEditingController(text: f.name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-')), TextEditingController(text: f.name),
+          TextEditingController(text: f.hex), ''),
   ];
 
   Future<void> _pick(_CwRow r) async {

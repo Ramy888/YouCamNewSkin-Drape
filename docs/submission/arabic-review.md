@@ -14,6 +14,9 @@ To see the text in context, open https://drape.ramy-comm.workers.dev/app/ and sw
 2. **Colour names stay in English** in the Arabic screens (Emerald, Lavender, Brick coral) because they come from the store's
    catalogue and the palette data. Say whether they should be translated.
 
+3. **Fabric names stay in English** inside Arabic sentences (e.g. "بـ Sea Green Silk") because they are YouCam template names.
+   Say whether to translate them (e.g. حرير أخضر بحري) or keep the English.
+
 ## Rules the copy must keep
 
 - The buyer is addressed in the feminine (the audience is women shopping modest fashion).

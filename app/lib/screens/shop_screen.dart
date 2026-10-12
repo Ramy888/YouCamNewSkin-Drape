@@ -92,6 +92,10 @@ class _ProductRow extends StatelessWidget {
                 ),
               ),
             ),
+          if (product.suggestion != null) ...[
+            const SizedBox(height: 8),
+            _NotSoldCard(app: app, product: product, suggestion: product.suggestion!),
+          ],
           const SizedBox(height: 12),
           FilledButton.icon(onPressed: () => app.openCompare(product), icon: const Icon(Icons.checkroom_outlined), label: Text(s.tryOn)),
         ]);
@@ -99,6 +103,35 @@ class _ProductRow extends StatelessWidget {
             ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [image, const SizedBox(width: 24), Expanded(child: info)])
             : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [image, const SizedBox(height: 16), info]);
       }),
+    );
+  }
+}
+
+/// None of this garment's colours suit her: offer it in a fabric from her palette (YouCam AI Fabric), "not sold yet".
+class _NotSoldCard extends StatelessWidget {
+  const _NotSoldCard({required this.app, required this.product, required this.suggestion});
+  final AppState app;
+  final Product product;
+  final FabricSuggestion suggestion;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = app.s;
+    final t = Theme.of(context).textTheme;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: Tone.mulberrySoft, borderRadius: BorderRadius.circular(12)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(s.noneYoursHere, style: t.titleMedium?.copyWith(fontSize: 16)),
+        const SizedBox(height: 4),
+        Text(s.closeToYour(suggestion.closest.name), style: t.bodySmall),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: () => app.openRecolor(product),
+          icon: Container(width: 18, height: 18, decoration: BoxDecoration(color: hexColor(suggestion.hex), shape: BoxShape.circle, border: Border.all(color: Colors.black12))),
+          label: Text(s.seeItIn(suggestion.name)),
+        ),
+      ]),
     );
   }
 }

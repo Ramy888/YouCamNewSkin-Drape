@@ -5,6 +5,7 @@ Usage (from the repo root):
 Each `tryon:<productId>:<colorwayId>` costs 2 units (cloth-v4 full_body on backend/public/persona/body.jpg with
 backend/public/catalog/<productId>_<colorwayId>.jpg). `makeup` costs 1 unit (lip from the persona's palette on face.jpg).
 `earring:<gold|silver|rose-gold>` costs 1 unit (2D earring VTO on face.jpg).
+`fabric:<persona image name>:<template_id>` costs 2 units (AI Fabric on an existing persona render, e.g. tryon_abaya-classic_black).
 Results go to backend/public/persona/ as images; raw responses are saved with remote URLs replaced by the local file name.
 """
 import json, os, re, sys, time
@@ -81,5 +82,9 @@ for job in jobs:
         ref = upload(os.path.join(PUB, "catalog", "jewelry", f"earring_{metal}.jpg"), "2d-vto/earring")
         run("2d-vto/earring", f"earring_{metal}", {"src_file_id": face, "ref_file_ids": [ref], "source_info": {"name": face},
             "object_infos": [{"name": ref, "parameter": {"earring_need_remove_background": True, "earring_occluded_type": 0}}]})
+    elif job.startswith("fabric:"):
+        _, src, template = job.split(":")
+        body = upload(os.path.join(PUB, "persona", f"{src}.jpg"), "fabric")
+        run("fabric", f"fabric_{src}_{template}", {"src_file_id": body, "template_id": template})
     else:
         raise SystemExit(f"unknown job {job}")

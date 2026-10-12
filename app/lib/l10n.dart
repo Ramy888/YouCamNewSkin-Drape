@@ -149,6 +149,21 @@ class S {
   String get lookLead => _('Outfit, lip shade and metal chosen from one reading.', 'الطقم ولون الشفايف والمعدن، كلهم من قراءة واحدة.');
   String get yourPick => _('Your pick', 'اختيارك');
 
+  // not sold yet (YouCam AI Fabric)
+  String get noneYoursHere => _('None of these colours is yours.', 'مفيش لون من دول يناسبك.');
+  String seeItIn(String colour) => _('See it in $colour', 'شوفيها بـ $colour');
+  String get notSoldTitle => _('In your colour, not sold yet', 'بلونك، ولسه مش معروضة');
+  String notSoldLead(String product, String colour, String closest) => _(
+      '$product, re-made in $colour, close to your $closest. The store doesn’t sell it yet.',
+      '$product بـ $colour، قريبة من لونك $closest. المحل لسه ما بيبيعهاش.');
+  String get notSoldBadge => _('Not sold yet', 'لسه مش معروضة');
+  String get settledLabel => _('What you’d buy today', 'اللي هتشتريه النهارده');
+  String closeToYour(String colour) => _('Close to your $colour', 'قريب من لونك $colour');
+  String askStore(String colour) => _('Ask the store to make it in $colour', 'اطلبي من المحل يعملها بـ $colour');
+  String get askedStore => _('Request sent. The store sees it in its Drape console.', 'طلبك اتبعت. المحل هيشوفه في لوحة Drape.');
+  String get previewUnavailable => _('The preview isn’t available right now, but you can still ask the store.', 'المعاينة مش متاحة دلوقتي، بس تقدري تطلبي من المحل.');
+  String completeWith(String colour) => _('Complete the look with $colour', 'كمّلي الإطلالة بـ $colour');
+
   // generic
   String get somethingWrong => _('Something went wrong.', 'حدث خطأ ما.');
   String get sampleBadge => _('Sample person', 'الشخص النموذجي');

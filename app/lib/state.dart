@@ -66,6 +66,11 @@ class AppState extends ChangeNotifier {
   Job? jewelryJob;
   final Map<String, Job> tryons = {};
   String? productId;
+
+  /// Compare in "not sold yet" mode: the colour she would settle for beside the same render in a fabric from her palette.
+  bool notSold = false;
+  Job? recolorJob;
+  bool askedColour = false;
   String? chosenColorwayId;
   bool addedAtStore = false;
   bool demoOrderPlaced = false;
@@ -150,9 +155,9 @@ class AppState extends ChangeNotifier {
     return ok == true;
   }
 
-  Future<Job?> _run(String type, String progress, {String? productId, String? colorwayId}) {
+  Future<Job?> _run(String type, String progress, {String? productId, String? colorwayId, String? template}) {
     return _guard(progress, () async {
-      var job = await api.createJob(type, productId: productId, colorwayId: colorwayId);
+      var job = await api.createJob(type, productId: productId, colorwayId: colorwayId, template: template);
       while (!job.finished) {
         await Future<void>.delayed(pollEvery);
         final (j, ses) = await api.getJob(job.id);
@@ -195,6 +200,7 @@ class AppState extends ChangeNotifier {
   Future<void> openCompare(Product p, {String? colorwayId}) async {
     productId = p.id;
     chosenColorwayId = colorwayId;
+    notSold = false;
     tryons.clear();
     final ses = session!;
     if (ses.mode == 'live' && !ses.persona && ses.bodyPhoto == null) {
@@ -203,6 +209,54 @@ class AppState extends ChangeNotifier {
     }
     go(FlowStep.compare);
     await renderCompare();
+  }
+
+  /// None of [p]'s colours suit her: try on the one she would settle for, then re-render it with YouCam AI Fabric in a
+  /// fabric her palette rates "yours" ("not sold yet"). If the preview can't be made, the colour swatch stands in.
+  Future<void> openRecolor(Product p) async {
+    productId = p.id;
+    chosenColorwayId = null;
+    notSold = true;
+    recolorJob = null;
+    askedColour = false;
+    tryons.clear();
+    final ses = session!;
+    if (ses.mode == 'live' && !ses.persona && ses.bodyPhoto == null) {
+      go(FlowStep.body);
+      return;
+    }
+    go(FlowStep.compare);
+    await renderNotSold();
+  }
+
+  Future<void> renderNotSold() async {
+    final p = product;
+    final pair = comparePair;
+    final sug = p?.suggestion;
+    if (pair == null || sug == null) return;
+    await renderTryon(pair.pick);
+    if (tryons[pair.pick.id]?.ok != true) return;
+    recolorJob = await _run('recolor', s.dressing(sug.name), productId: productId, colorwayId: pair.pick.id, template: sug.template);
+    notifyListeners();
+  }
+
+  /// "Ask the store to make it in this colour": recorded for the seller, and told to the store page that opened Drape.
+  Future<void> askForColour() async {
+    final ses = session;
+    final sug = product?.suggestion;
+    if (ses == null || sug == null) return;
+    final ok = await _guard(null, () => api.requestColour(productId!, sug.template));
+    if (ok == null) return;
+    askedColour = true;
+    if (entry.storeOrigin != null && ses.storeOrigin.isNotEmpty && Platform.hasOpener) {
+      Platform.postToOpener({
+        'type': 'drape:colour-request',
+        'sessionId': ses.id,
+        'productId': productId,
+        'colour': {'name': sug.name, 'hex': sug.hex, 'template': sug.template},
+      }, ses.storeOrigin);
+    }
+    notifyListeners();
   }
 
   Future<void> renderCompare() async {

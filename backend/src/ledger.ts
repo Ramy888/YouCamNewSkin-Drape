@@ -33,6 +33,7 @@ export const UNIT_COST = {
   tryon: 2,
   makeup: 1,
   jewelry: 1,
+  recolor: 2, // YouCam AI Fabric on the buyer's try-on render
 } as const;
 export type JobType = keyof typeof UNIT_COST;
 

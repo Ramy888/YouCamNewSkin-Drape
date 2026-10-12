@@ -1,0 +1,13 @@
+1. **The strongest point of Fable’s proposal**  
+Fable has the better 25-second emotional beat: “none of these colours are mine” becomes “ask the store to make it in my colour.” That is more memorable than analytics alone because it changes the buyer’s dead end into a store demand signal, and it makes the catalogue feel responsive rather than fixed.
+
+2. **Its biggest weakness for winning THIS hackathon by Nov 2**  
+The live Fabric + Clothes VTO chain is the risky part. The code currently supports only `skin-tone-analysis`, `cloth-v4`, `makeup-vto`, and `2d-vto/earring` in `backend/src/youcam.ts`, with ledger costs only for `color_reading`, `tryon`, `makeup`, and `jewelry` in `backend/src/ledger.ts`. Adding Fabric means a new task type, payload shape, unit accounting, cache, request endpoint, fixtures, and UI. More importantly, the submission docs already say Clothes VTO is reliable with clean real product shots and unreliable on synthetic recolours. Fable names the same risk: Fabric params still need confirmation, and the recolour may drift. That is a bad day-1 dependency for a judged demo where believability matters as much as magic.
+
+3. **Can the two be combined**  
+Yes. Build **Colour Demand Radar**: when a product has no “Yours” colour, the buyer sees “Ask for this in Terracotta” as a measured request, not a generated try-on. The seller console shows requests beside Radar metrics: rejected colours, rescued carts, palette segments, and “missing colour: Terracotta/deep teal.” Cut Fable’s live Fabric recolour, extra Clothes VTO render, and draft image generation. Cut Codex’s saved-profile addition and any overbuilt conversion math. Keep only events that are already natural in the app: verdicts, compare opens, add-to-cart, and colour requests. That is buildable in 3–5 days because the existing app already has the empty-state notice, seller console, product catalogue, session palette, and `drape:add-to-cart` handoff.
+
+4. **Your final recommendation**  
+Ship the combined zero-unit **Colour Demand Radar**: a buyer “ask for my colour” request feeding a seller radar, with no live Fabric unless day-1 proves it spectacular.
+
+Day-1 go / no-go: implement a seeded request + radar from real session/product/verdict data; if the seller screen cannot say, in one glance, “warm buyers rejected lavender and asked for terracotta/deep teal,” drop the request layer and ship plain Merchandising Radar.

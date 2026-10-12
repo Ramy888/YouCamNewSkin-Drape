@@ -1,6 +1,9 @@
 // Compare: the same piece in two colours on the buyer's body. The palette pick sits on the
 // reading-start side (left in English, right in Arabic) because Row follows the text direction.
 // Verdicts describe the garment ("Lifts your colouring"), never the skin.
+//
+// "Not sold yet" mode: when none of a garment's colours suit her, the reading-start side shows her own try-on re-made by
+// YouCam AI Fabric in a fabric from her palette, beside the colour she would settle for, and she can ask the store for it.
 import 'package:flutter/material.dart';
 
 import '../api.dart';
@@ -19,6 +22,7 @@ class CompareScreen extends StatelessWidget {
     final p = app.product;
     final pair = app.comparePair;
     if (p == null || pair == null) return const SizedBox();
+    if (app.notSold && p.suggestion != null) return _NotSold(app: app, product: p, settled: pair.pick, suggestion: p.suggestion!);
     final pickJob = app.tryons[pair.pick.id];
     final offJob = pair.off == null ? null : app.tryons[pair.off!.id];
     final note = [pickJob, offJob].whereType<Job>().where((j) => j.sample && j.note != null).map((j) => j.note!).firstOrNull;
@@ -49,10 +53,84 @@ class CompareScreen extends StatelessWidget {
 }
 
 class CompareSide {
-  const CompareSide({required this.colorway, this.job, this.imageUrl});
+  const CompareSide({required this.colorway, this.job, this.imageUrl, this.verdict, this.verdictText, this.badge, this.swatchFallback});
   final Colorway colorway;
   final Job? job;
   final String? imageUrl;
+
+  /// Defaults: the pick "lifts", the other side "fights".
+  final Verdict? verdict;
+  final String? verdictText;
+
+  /// Small label over the image, e.g. "Not sold yet".
+  final String? badge;
+
+  /// Shown in place of the image when the render isn't available: a block of the colour with this text.
+  final String? swatchFallback;
+}
+
+class _NotSold extends StatelessWidget {
+  const _NotSold({required this.app, required this.product, required this.settled, required this.suggestion});
+  final AppState app;
+  final Product product;
+  final Colorway settled;
+  final FabricSuggestion suggestion;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = app.s;
+    final settledJob = app.tryons[settled.id];
+    final recolor = app.recolorJob;
+    final fabric = Colorway(id: suggestion.template, name: suggestion.name, hex: suggestion.hex, image: '', verdict: Verdict.yours);
+    final note = [settledJob, recolor].whereType<Job>().where((j) => j.sample && j.note != null).map((j) => j.note!).firstOrNull;
+    // The recolour only starts once her try-on exists; until then (or if it fails) the colour itself stands in.
+    final recolorFailed = recolor != null && !recolor.ok;
+    final settledFailed = settledJob != null && !settledJob.ok;
+    return DrapePage(maxWidth: 904, children: [
+      StepHeader(eyebrow: s.stepOf(3), title: s.notSoldTitle, lead: s.notSoldLead(product.name, suggestion.name, suggestion.closest.name)),
+      if (note != null) ...[const SizedBox(height: 10), Notice(text: app.session?.persona == true ? note : s.sampleResult)],
+      const SizedBox(height: 16),
+      ComparePairView(
+        s: s,
+        pick: CompareSide(
+          colorway: fabric,
+          job: recolorFailed || settledFailed ? Job.unavailable() : recolor,
+          imageUrl: recolor?.image == null ? null : app.api.abs(recolor!.image!),
+          verdict: Verdict.yours,
+          verdictText: s.closeToYour(suggestion.closest.name),
+          badge: s.notSoldBadge,
+          swatchFallback: s.previewUnavailable,
+        ),
+        off: CompareSide(
+          colorway: settled,
+          job: settledJob,
+          imageUrl: settledJob?.image == null ? null : app.api.abs(settledJob!.image!),
+          verdict: Verdict.neutral,
+          verdictText: s.settledLabel,
+        ),
+        busyText: app.busy,
+        onRetry: (_) => app.renderNotSold(),
+      ),
+      const SizedBox(height: 28),
+      if (app.askedColour)
+        Notice(text: s.askedStore)
+      else
+        Center(
+          child: FilledButton.icon(
+            onPressed: app.busy == null ? app.askForColour : null,
+            icon: const Icon(Icons.storefront_outlined),
+            label: Text(s.askStore(suggestion.name)),
+          ),
+        ),
+      const SizedBox(height: 12),
+      Center(
+        child: OutlinedButton(
+          onPressed: settledJob?.ok == true ? () => app.completeLook() : null,
+          child: Text(s.completeWith(settled.name)),
+        ),
+      ),
+    ]);
+  }
 }
 
 class ComparePairView extends StatelessWidget {
@@ -66,8 +144,9 @@ class ComparePairView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final panels = [
-      _Panel(key: const ValueKey('compare-pick'), side: pick, verdictText: s.liftsYou, good: true, s: s, busyText: busyText, onRetry: onRetry),
-      if (off != null) _Panel(key: const ValueKey('compare-off'), side: off!, verdictText: s.fightsYou, good: false, s: s, busyText: busyText, onRetry: onRetry),
+      _Panel(key: const ValueKey('compare-pick'), side: pick, verdictText: pick.verdictText ?? s.liftsYou, verdict: pick.verdict ?? Verdict.yours, s: s, busyText: busyText, onRetry: onRetry),
+      if (off != null)
+        _Panel(key: const ValueKey('compare-off'), side: off!, verdictText: off!.verdictText ?? s.fightsYou, verdict: off!.verdict ?? Verdict.avoid, s: s, busyText: busyText, onRetry: onRetry),
     ];
     return LayoutBuilder(builder: (context, c) {
       final narrow = c.maxWidth < 520 && panels.length > 1;
@@ -87,10 +166,10 @@ class ComparePairView extends StatelessWidget {
 }
 
 class _Panel extends StatelessWidget {
-  const _Panel({super.key, required this.side, required this.verdictText, required this.good, required this.s, this.busyText, this.onRetry});
+  const _Panel({super.key, required this.side, required this.verdictText, required this.verdict, required this.s, this.busyText, this.onRetry});
   final CompareSide side;
   final String verdictText;
-  final bool good;
+  final Verdict verdict;
   final S s;
   final String? busyText;
   final void Function(Colorway)? onRetry;
@@ -104,6 +183,17 @@ class _Panel extends StatelessWidget {
       body = Center(child: Padding(padding: const EdgeInsets.all(12), child: Progress(text: s.dressing(side.colorway.name))));
     } else if (job.ok && side.imageUrl != null) {
       body = Image.network(side.imageUrl!, fit: BoxFit.cover, alignment: Alignment.topCenter, semanticLabel: '${side.colorway.name}: $verdictText');
+    } else if (side.swatchFallback != null) {
+      final colour = hexColor(side.colorway.hex);
+      body = ColoredBox(
+        color: colour,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(side.swatchFallback!, textAlign: TextAlign.center, style: t.bodyMedium?.copyWith(color: onSwatch(colour))),
+          ),
+        ),
+      );
     } else {
       body = Center(
         child: Padding(
@@ -121,7 +211,14 @@ class _Panel extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(10),
-          child: AspectRatio(aspectRatio: 3 / 4, child: ColoredBox(color: Tone.paperDeep, child: body)),
+          child: AspectRatio(
+            aspectRatio: 3 / 4,
+            child: Stack(fit: StackFit.expand, children: [
+              ColoredBox(color: Tone.paperDeep, child: body),
+              if (side.badge != null)
+                PositionedDirectional(top: 8, start: 8, child: Tag(text: side.badge!, color: Colors.white, bg: Tone.mulberry, icon: Icons.auto_awesome_outlined)),
+            ]),
+          ),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(6, 12, 6, 6),
@@ -132,7 +229,7 @@ class _Panel extends StatelessWidget {
               Expanded(child: Text(side.colorway.name, style: t.titleMedium)),
             ]),
             const SizedBox(height: 8),
-            VerdictLabel(verdict: good ? Verdict.yours : Verdict.avoid, s: s, text: verdictText),
+            VerdictLabel(verdict: verdict, s: s, text: verdictText),
           ]),
         ),
       ]),

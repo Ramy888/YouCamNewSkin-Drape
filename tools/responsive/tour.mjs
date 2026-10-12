@@ -1,8 +1,9 @@
 // Responsive tour: store (live) + Drape buyer flow and seller console (local) at phone / tablet / desktop sizes.
 // Usage: start `wrangler dev --port 8788` in backend/ with SELLER_SECRET:sk_e2e_only, then `node tools/responsive/tour.mjs [phone|tablet|landscape]`.
 // Screenshots land next to this file (gitignored). cdp.mjs comes from IgnyteDuChallenge/scripts/demo-video with a `mobile` flag added.
+import { fileURLToPath } from "node:url";
 import { launch, sleep } from "./cdp.mjs";
-const OUT = new URL(".", import.meta.url).pathname;
+const OUT = fileURLToPath(new URL(".", import.meta.url));
 const APP = process.env.APP ?? "http://localhost:8788";
 const STORE = "https://noor-modest.ramy-comm.workers.dev/";
 const sizes = [

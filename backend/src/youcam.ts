@@ -7,7 +7,7 @@ import personaReading from "../public/persona/color_tones.json";
 
 export const BASE_DEFAULT = "https://yce-api-01.makeupar.com/s2s/v2.0";
 
-export type YouCamTask = "skin-tone-analysis" | "cloth-v4" | "makeup-vto" | "2d-vto/earring";
+export type YouCamTask = "skin-tone-analysis" | "cloth-v4" | "makeup-vto" | "2d-vto/earring" | "fabric";
 
 export interface Upload { bytes: Uint8Array; type: string; name: string }
 

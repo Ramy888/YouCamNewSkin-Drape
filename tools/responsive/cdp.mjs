@@ -1,5 +1,6 @@
 // Minimal headless-Chrome driver over CDP (Node built-in WebSocket). No Claude overlay, no extensions.
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -91,14 +92,14 @@ export async function launch({ width = 1440, height = 900, scale = 1, port = 934
   const click = async (text, opts = {}) => {
     let p;
     for (let i = 0; i < 20 && !(p = await find(text, opts)); i++) await sleep(250);
-    if (!p) { await shot(new URL("./fail.png", import.meta.url).pathname); throw new Error("not found: " + text); }
+    if (!p) { await shot(fileURLToPath(new URL("./fail.png", import.meta.url))); throw new Error("not found: " + text); }
     await clickAt(p);
     const done = async () => (opts.expect ? !!(await find(opts.expect)) : opts.gone ? !(await find(text, opts)) : true);
     for (let i = 0; i < 12; i++) { if (await done()) return p; await sleep(200); }
     console.error("fallback DOM click:", text);
     if (await find(text, opts)) await evaluate(`document.querySelector('[data-rec-target]').click()`);
     for (let i = 0; i < 15; i++) { if (await done()) return p; await sleep(200); }
-    await shot(new URL("./fail.png", import.meta.url).pathname);
+    await shot(fileURLToPath(new URL("./fail.png", import.meta.url)));
     throw new Error("click had no effect: " + text);
   };
 
