@@ -139,9 +139,9 @@ flutter, dart, cloudflare-workers, durable-objects, sqlite, cloudflare-r2, types
 - Second demo store: https://layla-boutique.ramy-comm.workers.dev
 - Drape app: https://drape.ramy-comm.workers.dev/app/
 - Seller console: https://drape.ramy-comm.workers.dev/app/#/seller (sign-in key in the testing instructions)
-- Chrome extension: https://drape.ramy-comm.workers.dev/extension/drape-extension.zip
-  **OUTSTANDING:** once the Chrome Web Store listing is live (`docs/chrome-web-store/LISTING.md`), replace this zip link
-  with the store URL in Devpost's public "Try it out" links.
+- Chrome extension: https://chromewebstore.google.com/detail/ecbnnlodjpegdmdflgnkhcplfcimacnc
+  (Devpost link swapped from the zip on 2026-10-14; the store item was submitted the same day and is pending Google's review,
+  so the link opens only once it is approved. The zip stays at https://drape.ramy-comm.workers.dev/extension/drape-extension.zip.)
 
 The source code link is **not** a public "Try it out" link (Ramy removed it on 2026-10-13); it lives only in Additional info
 ("URL to your code repository"), which is for judges and organizers.
@@ -182,7 +182,8 @@ look card. Layla Boutique (https://layla-boutique.ramy-comm.workers.dev) has its
 Devpost "Additional info" (judges only) and is kept out of this public repository. It shows everything; saving, uploads and unit
 reconciling are refused by the server.
 
-**Chrome extension (optional):** download the zip above, unzip, open `chrome://extensions`, turn on Developer mode, click
+**Chrome extension (optional):** install it from the Chrome Web Store link above, or download
+https://drape.ramy-comm.workers.dev/extension/drape-extension.zip, unzip, open `chrome://extensions`, turn on Developer mode, click
 **Load unpacked**, choose the folder, open the demo store and click the Drape icon.
 
 ## Built since the submission period opened
