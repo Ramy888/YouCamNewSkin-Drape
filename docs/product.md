@@ -1,7 +1,7 @@
 # Drape: build spec
 
-Approved by Ramy on 2026-10-10 after /autoplan (CEO, design, DX and eng reviews, each with a Claude and a Codex reviewer).
-This file is the only thing to build from. History, debates and review records are in `docs/history.md` and `docs/debate/`.
+Approved by the owner on 2026-10-10 after /autoplan (CEO, design, DX and eng reviews, each with a Claude and a Codex reviewer).
+This file is the only thing to build from. History and review records are in `docs/history.md`.
 
 ## What it is
 
@@ -126,11 +126,11 @@ Done (deployed, replay mode):
 - [x] Flutter web app: capture, hijab-drape reveal, shop with verdicts, Compare, makeup + earrings, look card, Arabic RTL, seller console
 - [x] Earrings VTO (2D) in the palette metal; listing links + `/v1/lookup`; URL-only Chrome extension (activeTab only)
 - [x] README, MIT licence, CI (typecheck, unit, e2e, secret scan, extension guard)
-- [x] "Not sold yet" (round 5, `docs/debate/r5-verdict.md`): YouCam AI Fabric re-makes her try-on in an opaque palette fabric
+- [x] "Not sold yet" (round 5): YouCam AI Fabric re-makes her try-on in an opaque palette fabric
   (live only for templates checked for cut and modesty), free "ask the store" requests, seller Colour Demand panel, third product
 - [x] Replay fixtures for the not-sold beat: persona try-on of the Everyday abaya in navy + Fabric Sea Green Silk (2026-10-12)
 
-Waiting for the live switch (needs Ramy's approval, spends units):
+Waiting for the live switch (needs the owner's approval, spends units):
 - [x] Persona renders for every catalogue colourway and persona makeup (earrings fail on the sample: ears covered by hair)
 - [x] Synthetic persona (generated face + full body, warm/high) replaces the YouCam sample images: reading, makeup, all 9 colourways, Fabric (41u, 2026-10-12)
 - [x] `YOUCAM_API_KEY` secret set; live with budget 400 via `npm run deploy:live` (config file stays replay)

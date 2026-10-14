@@ -76,7 +76,7 @@ new try-ons (2–4).
 **Judge / demo mode:** a pre-rendered persona (all steps cached once) so judges can click through until Nov 20 without spending units.
 Live mode is for their own photo, behind the per-session cap.
 
-## Open risks to verify (each test needs Ramy's approval; costs are estimates)
+## Open risks to verify (each test needs the owner's approval; costs are estimates)
 
 1. **Chaining (step 7 → 8):** can Makeup VTO run on the *clothes VTO output*? In a full-body image the face may be under Makeup VTO's
    minimum (face ≥100 px), so the call may fail. Fallback: apply makeup to the selfie and show it as a face close-up next to the outfit. Test ≈ 1–3u.

@@ -1,4 +1,4 @@
-"""Render the judge persona's replay fixtures. SPENDS UNITS: run only after Ramy approves the exact run.
+"""Render the judge persona's replay fixtures. SPENDS UNITS: run only after the owner approves the exact run.
 
 Usage (from the repo root):
   python3 docs/derisk/render_persona.py .env tryon:abaya-classic:lavender makeup

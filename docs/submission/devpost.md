@@ -143,7 +143,7 @@ flutter, dart, cloudflare-workers, durable-objects, sqlite, cloudflare-r2, types
   (Devpost link swapped from the zip on 2026-10-14; the store item was submitted the same day and is pending Google's review,
   so the link opens only once it is approved. The zip stays at https://drape.ramy-comm.workers.dev/extension/drape-extension.zip.)
 
-The source code link is **not** a public "Try it out" link (Ramy removed it on 2026-10-13); it lives only in Additional info
+The source code link is **not** a public "Try it out" link (removed on 2026-10-13); it lives only in Additional info
 ("URL to your code repository"), which is for judges and organizers.
 
 ## Testing instructions (for judges)

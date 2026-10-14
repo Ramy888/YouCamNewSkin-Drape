@@ -3,7 +3,7 @@
 ## Implementation plan
 # Drape Network: product definition (debate round 3 synthesis, 2026-10-10; pending the owner's approval)
 
-Sources: docs/debate/codex_r3.md, docs/debate/fable_r3.md. Buyer flow detail: docs/app-flow.md.
+Buyer flow detail: docs/app-flow.md.
 
 **One backend, one buyer UI, three doors.**
 
@@ -63,7 +63,7 @@ On-model fails → the wild path stays behind the image picker only. Needs right
 **Decisions from this:** side-by-side colourway comparison ships; the wild path (on-model store photos) ships in the demo with the picker fallback.
 Caveat: n=1 per case, and DOM extraction on real stores is untested (free to test, no units).
 
-## Round 4 (2026-10-10): product registry with cross-store links (docs/debate/r4.md, codex_r4.md, fable_r4.md)
+## Round 4 (2026-10-10): product registry with cross-store links
 Both say **yes**: sellers add products once and attach their listing links on other stores (URL, ASIN, Shopify handle, GTIN). The extension
 checks the registry before anything else. They frame it as the reliability layer and a network, not yet "the business": with no sellers, nothing matches.
 - **Matching (0 units, URL/DOM only):** Tier 0 = normalised URL or platform ID (ASIN `/dp/…`, Shopify handle, Noon SKU) → auto-match ·
@@ -142,7 +142,7 @@ Demo: a synthetic store with the embedded button (API door) + a second synthetic
 ### Phase 1 — CEO review (mode: SELECTIVE EXPANSION, 2026-10-10)
 
 **System audit.** Greenfield, no code yet, not a git repo (needs `git init` + a remote before submission). No TODOS.md. Inputs: CLAUDE.md, docs/app-flow.md,
-docs/derisk/run_gate.py (working upload→task→poll client, reusable as the backend's YouCam adapter), docs/debate/*. No prior design doc.
+docs/derisk/run_gate.py (working upload→task→poll client, reusable as the backend's YouCam adapter). No prior design doc.
 Docs check (0u): `skin-tone-analysis` ("Facial Color Tones", 20u) returns hex `skin_color`, `hair_color`, `eye_color`, `lip_color`, `eyebrow_color`.
 Undertone and contrast can be derived from these deterministically (Lab a*/b*, skin–hair lightness gap). Fitzpatrick gives skin *type* only, so it cannot drive a colour palette.
 
@@ -180,7 +180,7 @@ Auto-decision: **A** (P1 completeness of what actually ships + P5 explicit). Thi
 1. Color Tones as the default reading (cached per face) → **accepted** (in blast radius, fixes P2).
 2. Capped live judge path → **accepted** (fixes P4).
 3. Rejected colourway rendered beside the approved one on the body → **accepted** (proven by the gate test; it is the video's hero moment).
-4. Abaya/`full_body` Clothes VTO test (2–4u) → **accepted as an owner-approval item** (no spend until Ramy says yes).
+4. Abaya/`full_body` Clothes VTO test (2–4u) → **accepted as an owner-approval item** (no spend until the owner says yes).
 5. Skin Analysis bridge for foundation finish → **deferred** (TODOS; 12–22u per call, not the wedge).
 6. Seller "colour demand" metric on the console → **deferred** (needs real traffic).
 
