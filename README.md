@@ -68,10 +68,10 @@ each store's `config.js`). Stores integrate with one script tag (below) or the R
 On a product page whose link the seller added to Drape, one click on the Drape icon opens Drape for that product.
 The extension uses only the page address (`activeTab` permission; no content scripts, no host access), and CI checks that.
 
-1. Download https://drape.ramy-comm.workers.dev/extension/drape-extension.zip and unzip it (or use the `extension/` folder).
-   Chrome Web Store submission materials are in `docs/chrome-web-store/`.
-2. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked**, pick the folder.
-3. Open the demo shop and click the Drape icon in the toolbar.
+1. Install it from the [Chrome Web Store](https://chromewebstore.google.com/detail/drape-see-the-colour-that/ecbnnlodjpegdmdflgnkhcplfcimacnc).
+2. Open the demo shop and click the Drape icon in the toolbar.
+
+To run it from source, load the `extension/` folder with **Load unpacked** on `chrome://extensions` (Developer mode on).
 
 Sellers add links in the seller console ("Where you sell it"). Amazon listings match by ASIN on any Amazon domain.
 
@@ -180,7 +180,7 @@ salted daily hash.
 
 - `backend/` — Cloudflare Worker, Durable Object, tests, static assets (`public/`: app build, embed script, persona fixtures, catalogue)
 - `app/` — Flutter web app (buyer flow + seller console)
-- `stores/noor/` — the fictional demo shop
+- `stores/noor/`, `stores/layla/` — the fictional demo shops
 - `extension/` — the URL-only Chrome extension
 - `DESIGN.md` — design system · `docs/submission/` — Devpost write-up and Arabic review sheet
 - `docs/product.md` — build spec · `docs/derisk/` — API gate tests and recorded fixtures · `docs/history.md` — planning history

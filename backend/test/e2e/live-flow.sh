@@ -26,6 +26,14 @@ H="authorization: Bearer $T"
 poll() { for i in $(seq 1 40); do s=$(curl -s "$B/v1/jobs/$1" -H "$H" | js 'j.job.status'); [ "$s" = done ] || [ "$s" = error ] && { echo $s; return; }; sleep 1; done; echo timeout; }
 job() { curl -s -X POST $B/v1/sessions/me/jobs -H "$H" -H 'content-type: application/json' -d "$1" | js 'j.job.id'; }
 
+echo "judge entry points"
+check "the bare domain opens the app" "$(curl -s -o /dev/null -w '%{redirect_url}' $B/)" "$B/app/"
+PT=$(curl -s -X POST $B/v1/sessions -H 'content-type: application/json' -d '{"key":"pk_demo_drape","persona":true}' | js 'j.token')
+pjob() { curl -s -X POST $B/v1/sessions/me/jobs -H "authorization: Bearer $PT" -H 'content-type: application/json' -d "$1" | js 'j.job.id'; }
+pjob '{"type":"color_reading"}' > /dev/null
+PJ=$(pjob '{"type":"jewelry"}')
+check "the sample person's earrings explain her covered ears" "$(curl -s $B/v1/jobs/$PJ -H "authorization: Bearer $PT" | js 'j.job.error.code')" "error_face_parsing"
+
 echo "catalogue across stores"
 check "public store list has the two fictional stores" "$(curl -s $B/v1/stores | js 'j.stores.map(s=>s.name).join(",")')" "Layla Boutique,Noor Modest"
 DT=$(curl -s -X POST $B/v1/sessions -H 'content-type: application/json' -d '{"key":"pk_drape","persona":true}' | js 'j.token')

@@ -1,5 +1,5 @@
 // Worker entry: API and health go to the DrapeState Durable Object; everything else is static assets
-// (buyer app under /app/, embed script under /embed/, the sample store under /store/).
+// (buyer app under /app/, embed script under /embed/).
 import { DrapeState, type Env } from "./state";
 
 export { DrapeState };
@@ -23,7 +23,7 @@ export default {
       }
       return res;
     }
-    if (url.pathname === "/") return Response.redirect(`${url.origin}/store/`, 302);
+    if (url.pathname === "/") return Response.redirect(`${url.origin}/app/`, 302);
     return env.ASSETS.fetch(req);
   },
 

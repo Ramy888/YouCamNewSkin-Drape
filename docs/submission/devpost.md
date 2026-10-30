@@ -1,7 +1,7 @@
 # Devpost submission: Drape
 
 Draft for the Devpost form, section by section. Paste each block into the matching field.
-Track: **eCommerce VTO**. Every link and number below was checked against the live deployment on 2026-10-11.
+Track: **eCommerce VTO**. Links and test counts re-checked against the live deployment on 2026-10-30.
 
 ---
 
@@ -71,8 +71,8 @@ Around the buyer flow:
   an error, and repeated upstream failures switch the app to recorded results for 30 minutes.
 - **Embed:** one script tag plus a `data-drape-product` button. Drape opens in a new tab (never an iframe) and returns the cart with a
   `postMessage` bound to the store's origin.
-- **Tests:** 58 backend unit tests (palette, ledger, adapter, links, fabric choice), a 49-check end-to-end test of the live path against a mock
-  YouCam server (including the view-only judge key and the Fabric limits), and 62 Flutter tests (right-to-left layout, phone,
+- **Tests:** 58 backend unit tests (palette, ledger, adapter, links, fabric choice), a 55-check end-to-end test of the live path against a mock
+  YouCam server (including the view-only judge key and the Fabric limits), and 72 Flutter tests (right-to-left layout, phone,
   tablet and laptop sizes, view-only console, not-sold flow). CI also scans for secrets and checks
   that a fresh clone makes zero calls to YouCam.
 
@@ -139,9 +139,7 @@ flutter, dart, cloudflare-workers, durable-objects, sqlite, cloudflare-r2, types
 - Second demo store: https://layla-boutique.ramy-comm.workers.dev
 - Drape app: https://drape.ramy-comm.workers.dev/app/
 - Seller console: https://drape.ramy-comm.workers.dev/app/#/seller (sign-in key in the testing instructions)
-- Chrome extension: https://chromewebstore.google.com/detail/ecbnnlodjpegdmdflgnkhcplfcimacnc
-  (Devpost link swapped from the zip on 2026-10-14; the store item was submitted the same day and is pending Google's review,
-  so the link opens only once it is approved. The zip stays at https://drape.ramy-comm.workers.dev/extension/drape-extension.zip.)
+- Chrome extension: https://chromewebstore.google.com/detail/drape-see-the-colour-that/ecbnnlodjpegdmdflgnkhcplfcimacnc
 
 The source code link is **not** a public "Try it out" link (removed on 2026-10-13); it lives only in Additional info
 ("URL to your code repository"), which is for judges and organizers.
@@ -156,8 +154,8 @@ No account or sign-up is needed. The app runs in English and Arabic (switch with
 2. Under the abaya, click **Try on with Drape**. Drape opens in a new tab.
 3. Click **Try with the sample person**.
 4. **Your colours:** the reading from YouCam Facial Color Tones, shown as the best and worst colour framing the face.
-5. **Shop your colours** → **See it on me** on the abaya: the emerald colourway (suits her) beside lavender (fights her), on her body.
-6. **Complete the look:** lip shade and metal. **Add the look to cart**: the store's bag opens with the look in it.
+5. **Shop your colours** → **See it on me** on the abaya: the colourway you opened (black, which suits her) beside lavender (fights her), on her body.
+6. **Complete the look:** lip shade and metal (her ears are covered, so Drape shows the metal instead of an earring). **Add the look to cart**: the store's bag opens with the look in it.
 
 The sample person's results were produced by real YouCam calls and are served from recordings, so this path costs nothing and never
 fails.
@@ -170,11 +168,11 @@ fails.
    instead of an error.
 4. **Delete my photos** removes everything immediately; otherwise photos are deleted after 24 hours.
 
-**Path D: not sold yet (YouCam AI Fabric).** With the sample person, open Shop your colours, scroll to "Everyday satin abaya" (none
+**Path C: not sold yet (YouCam AI Fabric).** With the sample person, open Shop your colours, scroll to "Everyday satin abaya" (none
 of its colours suit her), tap **See it in Sea Green Silk**, then **Ask the store to make it**. The request appears in the seller
 console under Colour demand, counted as demo.
 
-**Path E: the Drape catalogue.** Open https://drape.ramy-comm.workers.dev/app/, try with the sample person, then **Shop your
+**Path D: the Drape catalogue.** Open https://drape.ramy-comm.workers.dev/app/, try with the sample person, then **Shop your
 colours**: search, filter by store (Noor Modest, Layla Boutique, both fictional), **See it on me**, and **Buy at {store}** on the
 look card. Layla Boutique (https://layla-boutique.ramy-comm.workers.dev) has its own Drape button too.
 
@@ -190,7 +188,6 @@ https://drape.ramy-comm.workers.dev/extension/drape-extension.zip, unzip, open `
 
 The project is new. The repository's first commit is dated 2026-10-10, after the submission period opened on Sep 29, 2026.
 
-## Video (to record)
+## Video
 
-1–3 minutes, public on YouTube. It must name and explain each YouCam API, show the app running in the browser, use no third-party
-trademarks or copyrighted music, and be narrated or subtitled in English.
+https://youtu.be/Q_waXZP-Wks (2:38). It must stay **Public** on YouTube; the Rules require it to be publicly visible.

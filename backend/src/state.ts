@@ -16,7 +16,7 @@ import { linkKeys, validLink } from "./links";
 import { fabricTemplate, FABRICS_VERSION, noColourwaySuits, replayRecolorPath, suggestFabric } from "./fabric";
 import { buildPalette, verdictFor, type Palette } from "./palette";
 import rules from "./palette-rules.json";
-import { earringAsset, earringPayload, LiveYouCam, type Metal, PERSONA_READING, REPLAY_MAKEUP, replayEarringPath, replayTryonPath, type ColorTonesColor, YouCamError } from "./youcam";
+import { earringAsset, earringPayload, LiveYouCam, mapTaskError, type Metal, PERSONA_READING, REPLAY_MAKEUP, replayEarringPath, replayTryonPath, type ColorTonesColor, YouCamError } from "./youcam";
 
 export interface Env {
   DRAPE: DurableObjectNamespace<DrapeState>;
@@ -629,7 +629,11 @@ export class DrapeState extends DurableObject<Env> {
       const metal = params.metal as Metal;
       const rec = await this.recorded(replayEarringPath(metal));
       if (rec) this.finish(id, "done", { image: rec, metal, sample: !!sample, note });
-      else this.finish(id, "error", null, { kind: "unavailable", message: "Earring preview isn't available in demo mode yet.", retryable: false, metal });
+      else {
+        // The sample person wears hijab, so she gets the answer a live buyer with covered ears gets.
+        const e = mapTaskError("error_face_parsing");
+        this.finish(id, "error", null, { kind: e.kind, code: e.youcamCode, message: e.userMessage, retryable: e.retryable, metal });
+      }
       return;
     }
     const makeup = await this.recorded(REPLAY_MAKEUP);
